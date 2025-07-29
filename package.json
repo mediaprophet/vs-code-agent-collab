@@ -3,11 +3,11 @@
     "type": "git",
     "url": "https://github.com/mediaprophet/vs-code-agent-collab.git"
   },
-  "name": "copilot-automator",
-  "displayName": "Copilot Automator",
+  "name": "copilot-automator-grok-gpt",
+  "displayName": "Copilot Automator GROK + GPT Build",
   "description": "An extension to automate interactions with GitHub Copilot using a local LLM.",
-  "version": "0.1.3",
-  "publisher": "mediaprophet-grok-id",
+  "version": "0.0.1",
+  "publisher": "mediaprophet",
   "engines": {
     "vscode": "^1.94.0"
   },
@@ -18,6 +18,8 @@
   ],
   "main": "./out/extension.js",
   "icon": "images/robot-icon.png",
+  "license": "MIT",
+  "author": "Timothy Holborn",
   "contributes": {
     "commands": [
       {
@@ -82,7 +84,7 @@
         {
           "id": "copilotAutomatorActivityBar",
           "title": "Copilot Automator",
-          "icon": "images/robot-icon.png"
+          "icon": "images/robot-icon.svg"
         }
       ]
     },
