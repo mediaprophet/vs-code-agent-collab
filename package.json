@@ -1,0 +1,104 @@
+{
+  "name": "copilot-automator",
+  "displayName": "Copilot Automator",
+  "description": "An extension to automate interactions with GitHub Copilot using a local LLM.",
+  "version": "0.1.1",
+  "publisher": "mediaprophet-grok-id",
+  "engines": {
+    "vscode": ">=1.80.0"
+  },
+  "categories": [
+    "Other",
+    "Programming Languages",
+    "AI"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "icon": "images/robot-icon.png",
+  "contributes": {
+    "commands": [
+      {
+        "command": "copilot-automator.start",
+        "title": "Start Copilot Automation"
+      },
+      {
+        "command": "copilot-automator.stop",
+        "title": "Stop Copilot Automation"
+      },
+      {
+        "command": "copilot-automator.openSettings",
+        "title": "Copilot Automator: Open Settings Panel"
+      },
+      {
+        "command": "copilot-automator.selectFiles",
+        "title": "Copilot Automator: Select Files for LLM Review"
+      },
+      {
+        "command": "copilot-automator.manageSpecResources",
+        "title": "Copilot Automator: Manage Specification Resources"
+      },
+      {
+        "command": "copilot-automator.refreshModels",
+        "title": "Copilot Automator: Refresh LLM Models"
+      },
+      {
+        "command": "copilot-automator.selectModel",
+        "title": "Copilot Automator: Select LLM Model"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "copilotAutomatorActivityBar",
+          "title": "Copilot Automator",
+          "icon": "images/robot-icon.png"
+        }
+      ]
+    },
+    "views": {
+      "copilotAutomatorActivityBar": [
+        {
+          "id": "copilotAutomatorPanel",
+          "name": "Automator Panel",
+          "type": "webview",
+          "icon": "images/robot-icon.png"
+        },
+        {
+          "id": "copilotAutomatorModels",
+          "name": "Available LLM Models",
+          "icon": "images/robot-icon.png"
+        },
+        {
+          "id": "copilotAutomatorHistory",
+          "name": "Automation History / Logs",
+          "icon": "images/robot-icon.png"
+        },
+        {
+          "id": "copilotAutomatorCommands",
+          "name": "Available Commands",
+          "icon": "images/robot-icon.png"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.80.0",
+    "@types/glob": "^8.1.0",
+    "eslint": "^8.0.0",
+    "typescript": "^5.0.0",
+    "@vscode/test-electron": "^2.5.2"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "glob": "^10.3.10"
+  }
+}
