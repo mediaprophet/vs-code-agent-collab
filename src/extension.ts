@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as glob from 'glob';
 
 // --- Automation History / Logs Tree View ---
 class HistoryItem {
@@ -174,7 +173,7 @@ function openSettingsPanel(context: vscode.ExtensionContext) {
             LLM_MODEL = msg.llmModel;
             LLM_TEMPERATURE = msg.llmTemp;
             MAX_PROMPTS_PER_SESSION = msg.maxPrompts;
-            CONTEXT_SOURCE = msg.contextSource;
+            const CONTEXT_SOURCE = msg.contextSource;
             FILE_REVIEW_PATHS = msg.fileReviewPaths;
             SPEC_RESOURCE_URLS = msg.specResourceUrls;
             vscode.window.showInformationMessage('Copilot Automator settings saved.');
@@ -331,6 +330,11 @@ class AutomatorPanelProvider implements vscode.WebviewViewProvider {
         webviewView.webview.html = this.getHtmlForWebview(webviewView.webview);
     }
 
+    dispose() {
+        // Clean up if necessary
+        this._view = undefined;
+    }
+
     private getHtmlForWebview(webview: vscode.Webview): string {
         return `<!DOCTYPE html>
 <html lang="en">
@@ -373,15 +377,6 @@ class AutomatorPanelProvider implements vscode.WebviewViewProvider {
         };
         document.getElementById('settingsBtn').onclick = () => {
             vscode.postMessage({ command: 'openSettings' });
-            addDialogue('User: Open Settings');
-        };
-        document.getElementById('selectFilesBtn').onclick = () => {
-            vscode.postMessage({ command: 'selectFiles' });
-            addDialogue('User: Select Files for Review');
-        };
-        document.getElementById('specResourcesBtn').onclick = () => {
-            vscode.postMessage({ command: 'manageSpecResources' });
-            addDialogue('User: Manage Specification Resources');
         };
         document.getElementById('commandForm').onsubmit = (e) => {
             e.preventDefault();
@@ -405,28 +400,24 @@ class AutomatorPanelProvider implements vscode.WebviewViewProvider {
 </body>
 </html>`;
     }
-
-    dispose() {
-        // No resources to clean up
-    }
 }
+
+// --- Settings Panel (Webview) ---
 
 // --- Configurable constants (persistent) ---
 let MAX_PROMPTS_PER_SESSION = 10;
 let LLM_API_URL = 'http://localhost:1234/v1/chat/completions';
-let LLM_MODEL = 'your-model-name';
+let LLM_MODEL = 'your-model-name'; // Update as needed
 let LLM_TEMPERATURE = 0.7;
-let CONTEXT_SOURCE = 'editor';
 let FILE_REVIEW_PATHS = '';
-let SPEC_RESOURCE_URLS = ''; // Comma-separated URLs
+let SPEC_RESOURCE_URLS = '';
 const PROMPT_DELAY_MS = 2000;
 
 // --- State ---
 let promptCount = 0;
-let agentCooperationActive = false;
-let agentCooperationLoop: NodeJS.Timeout | undefined;
+let automationActive = false;
+let automationLoop: NodeJS.Timeout | undefined;
 let logFilePath: string;
-let selectedFiles: string[] = [];
 
 // --- Logging ---
 function logInteraction(logLevel: string, action: string, message: any) {
@@ -436,261 +427,45 @@ function logInteraction(logLevel: string, action: string, message: any) {
         action,
         message
     };
-    try {
-        fs.appendFileSync(logFilePath, JSON.stringify(entry) + '\n');
-    } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        console.error('Failed to write log:', errorMessage);
-        vscode.window.showErrorMessage(`Failed to write to log file: ${errorMessage}`);
-    }
-}
-
-// --- Create Instructions Folder ---
-function ensureInstructionsFolder(workspaceFolders: readonly vscode.WorkspaceFolder[] | undefined): string | undefined {
-    if (!workspaceFolders || workspaceFolders.length === 0) {
-        logInteraction('WARNING', 'NO_WORKSPACE', 'No workspace folders found for instructions folder creation.');
-        vscode.window.showWarningMessage('No workspace open. Cannot create instructions folder.');
-        return undefined;
-    }
-    const root = workspaceFolders[0].uri.fsPath;
-    const instructionsDir = path.join(root, 'instructions');
-    try {
-        if (!fs.existsSync(instructionsDir)) {
-            fs.mkdirSync(instructionsDir, { recursive: true });
-            logInteraction('INFO', 'INSTRUCTIONS_FOLDER_CREATED', `Created instructions folder at ${instructionsDir}`);
-            vscode.window.showInformationMessage(`Created instructions folder at ${instructionsDir}`);
+    fs.appendFile(logFilePath, JSON.stringify(entry) + '\n', err => {
+        if (err) {
+            console.error('Failed to write log:', err);
         }
-    } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        logInteraction('ERROR', 'INSTRUCTIONS_FOLDER_CREATION_FAILED', errorMessage);
-        vscode.window.showErrorMessage(`Failed to create instructions folder: ${errorMessage}`);
-        return undefined;
-    }
-    return instructionsDir;
-}
-
-// --- File and Instructions Retrieval for LLM Review ---
-async function getFilesForLLMReview(context: vscode.ExtensionContext): Promise<string> {
-    let fileContents = '';
-    const patterns = FILE_REVIEW_PATHS ? FILE_REVIEW_PATHS.split(',').map(p => p.trim()) : [];
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-
-    // Include instructions folder
-    const instructionsDir = ensureInstructionsFolder(workspaceFolders);
-    if (instructionsDir) {
-        patterns.push(path.join('instructions', '*.json'));
-    }
-
-    // Read manually selected files
-    if (selectedFiles.length > 0) {
-        for (const filePath of selectedFiles) {
-            // Restrict to workspace paths
-            if (workspaceFolders && !filePath.startsWith(workspaceFolders[0].uri.fsPath)) {
-                logInteraction('WARNING', 'FILE_ACCESS_DENIED', `File ${filePath} is outside workspace.`);
-                vscode.window.showWarningMessage(`File ${path.basename(filePath)} is outside workspace and will be skipped.`);
-                continue;
-            }
-            try {
-                const content = fs.readFileSync(filePath, 'utf-8');
-                // Validate JSON for instructions folder files
-                if (filePath.startsWith(path.join(workspaceFolders?.[0].uri.fsPath || '', 'instructions')) && filePath.endsWith('.json')) {
-                    try {
-                        JSON.parse(content);
-                    } catch (err: unknown) {
-                        const errorMessage = err instanceof Error ? err.message : String(err);
-                        logInteraction('ERROR', 'INVALID_JSON', `Invalid JSON in ${filePath}: ${errorMessage}`);
-                        vscode.window.showErrorMessage(`Invalid JSON in ${path.basename(filePath)}: ${errorMessage}`);
-                        continue;
-                    }
-                }
-                fileContents += `\n\nFile: ${filePath}\n${content}`;
-                logInteraction('INFO', 'FILE_REVIEW', `Read file: ${filePath}`);
-            } catch (err: unknown) {
-                const errorMessage = err instanceof Error ? err.message : String(err);
-                logInteraction('ERROR', 'FILE_READ_FAILED', `Failed to read file ${filePath}: ${errorMessage}`);
-                vscode.window.showErrorMessage(`Failed to read file ${path.basename(filePath)}: ${errorMessage}`);
-            }
-        }
-    }
-
-    // Read files from patterns
-    if (patterns.length > 0 && workspaceFolders) {
-        const root = workspaceFolders[0].uri.fsPath;
-        for (const pattern of patterns) {
-            try {
-                const files = glob.sync(pattern, { cwd: root, absolute: true });
-                for (const filePath of files) {
-                    // Restrict to workspace paths
-                    if (!filePath.startsWith(root)) {
-                        logInteraction('WARNING', 'FILE_ACCESS_DENIED', `File ${filePath} is outside workspace.`);
-                        vscode.window.showWarningMessage(`File ${path.basename(filePath)} is outside workspace and will be skipped.`);
-                        continue;
-                    }
-                    try {
-                        const content = fs.readFileSync(filePath, 'utf-8');
-                        // Validate JSON for instructions folder files
-                        if (filePath.startsWith(path.join(root, 'instructions')) && filePath.endsWith('.json')) {
-                            try {
-                                JSON.parse(content);
-                            } catch (err: unknown) {
-                                const errorMessage = err instanceof Error ? err.message : String(err);
-                                logInteraction('ERROR', 'INVALID_JSON', `Invalid JSON in ${filePath}: ${errorMessage}`);
-                                vscode.window.showErrorMessage(`Invalid JSON in ${path.basename(filePath)}: ${errorMessage}`);
-                                continue;
-                            }
-                        }
-                        fileContents += `\n\nFile: ${filePath}\n${content}`;
-                        logInteraction('INFO', 'FILE_REVIEW', `Read file: ${filePath}`);
-                    } catch (err: unknown) {
-                        const errorMessage = err instanceof Error ? err.message : String(err);
-                        logInteraction('ERROR', 'FILE_READ_FAILED', `Failed to read file ${filePath}: ${errorMessage}`);
-                        vscode.window.showErrorMessage(`Failed to read file ${path.basename(filePath)}: ${errorMessage}`);
-                    }
-                }
-            } catch (err: unknown) {
-                const errorMessage = err instanceof Error ? err.message : String(err);
-                logInteraction('ERROR', 'PATTERN_PROCESSING_FAILED', `Failed to process pattern ${pattern}: ${errorMessage}`);
-                vscode.window.showErrorMessage(`Failed to process file pattern ${pattern}: ${errorMessage}`);
-            }
-        }
-    }
-
-    if (!fileContents) {
-        logInteraction('INFO', 'NO_FILES_REVIEWED', 'No files selected or matched for LLM review.');
-        vscode.window.showInformationMessage('No files available for LLM review.');
-    }
-    return fileContents || 'No file content available for review.';
-}
-
-// --- Fetch Specification Resources ---
-async function fetchSpecResources(): Promise<string> {
-    let specContent = '';
-    const urls = SPEC_RESOURCE_URLS ? SPEC_RESOURCE_URLS.split(',').map(url => url.trim()).filter(url => url) : [];
-    for (const url of urls) {
-        // Validate and sanitize URLs
-        try {
-            new URL(url); // Basic URL validation
-            if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                throw new Error('Invalid protocol');
-            }
-        } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : String(err);
-            logInteraction('ERROR', 'INVALID_URL', `Invalid URL ${url}: ${errorMessage}`);
-            vscode.window.showErrorMessage(`Invalid URL ${url}: ${errorMessage}`);
-            continue;
-        }
-        try {
-            const response = await axios.get(url, { timeout: 5000 }); // 5-second timeout
-            specContent += `\n\nSpecification Resource: ${url}\n${response.data}`;
-            logInteraction('INFO', 'SPEC_RESOURCE_FETCHED', `Fetched content from ${url}`);
-        } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : String(err);
-            logInteraction('ERROR', 'SPEC_RESOURCE_FETCH_FAILED', `Failed to fetch ${url}: ${errorMessage}`);
-            vscode.window.showErrorMessage(`Failed to fetch specification resource ${url}: ${errorMessage}`);
-        }
-    }
-    if (!specContent) {
-        logInteraction('INFO', 'NO_SPEC_RESOURCES', 'No specification resources available.');
-        vscode.window.showInformationMessage('No specification resources available.');
-    }
-    return specContent || 'No specification resource content available.';
+    });
 }
 
 // --- LLM Integration ---
-async function generatePromptFromLocalLLM(contextualInfo: string, fileContents: string, specContents: string, isRetry: boolean = false): Promise<string> {
+async function generatePromptFromLocalLLM(contextualInfo: string): Promise<string> {
     try {
         const payload = {
             model: LLM_MODEL,
             messages: [
-                { 
-                    role: 'system', 
-                    content: `You are an expert coding assistant. When generating the next prompt for Copilot, enclose it strictly in <copilot_instructions> and </copilot_instructions> tags. Any other thoughts, explanations, or additional content should be outside these tags. If an error occurs, consult the specification resources: ${SPEC_RESOURCE_URLS}.` 
-                },
-                { 
-                    role: 'user', 
-                    content: `${contextualInfo}\n\nFiles for review:\n${fileContents}\n\nSpecification Resources:\n${specContents}${isRetry ? '\n\nPrevious attempt failed. Review specifications and try again.' : ''}` 
-                }
+                { role: 'system', content: 'You are an expert coding assistant.' },
+                { role: 'user', content: contextualInfo }
             ],
             temperature: LLM_TEMPERATURE
         };
         const response = await axios.post(LLM_API_URL, payload);
-        let content = response.data.choices?.[0]?.message?.content || '';
+        const content = response.data.choices?.[0]?.message?.content || '';
         logInteraction('INFO', 'LOCAL_LLM_REQUEST', { request: payload, response: content });
-
-        // Extract content between <copilot_instructions> tags
-        const match = content.match(/<copilot_instructions>([\s\S]*?)<\/copilot_instructions>/);
-        if (match && match[1]) {
-            content = match[1].trim();
-            logInteraction('INFO', 'PROMPT_EXTRACTED', content);
-        } else {
-            logInteraction('WARNING', 'NO_INSTRUCTIONS_TAG', 'No <copilot_instructions> tag found, using full content.');
-            vscode.window.showWarningMessage('No <copilot_instructions> tags found in LLM response.');
-        }
-
         return content;
-    } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        logInteraction('ERROR', 'LOCAL_LLM_REQUEST', errorMessage);
-        vscode.window.showErrorMessage(`LLM request failed: ${errorMessage}`);
+    } catch (error) {
+        logInteraction('ERROR', 'LOCAL_LLM_REQUEST', error);
         return '';
     }
 }
 
 // --- Copilot Chat Automation ---
-async function sendPromptToChat(promptText: string, historyProvider: HistoryProvider) {
-    if (!promptText) {
-        logInteraction('ERROR', 'INVALID_PROMPT', 'Empty prompt provided.');
-        vscode.window.showErrorMessage('Cannot send empty prompt to Copilot.');
-        return;
-    }
-
-    // Approval step
-    const approval = await vscode.window.showQuickPick(['Yes', 'No'], {
-        placeHolder: `Approve sending this prompt to Copilot? "${promptText.substring(0, 50)}${promptText.length > 50 ? '...' : ''}"`
-    });
-    if (approval !== 'Yes') {
-        logInteraction('INFO', 'PROMPT_DENIED', promptText);
-        historyProvider.add(new HistoryItem('Prompt Denied', promptText.substring(0, 50)));
-        vscode.window.showInformationMessage('Prompt denied by user.');
-        return;
-    }
-
-    // Check for sensitive actions like 'run'
-    if (promptText.toLowerCase().includes('run')) {
-        const runApproval = await vscode.window.showQuickPick(['Yes', 'No'], {
-            placeHolder: `This prompt includes a potential run request. Proceed? "${promptText.substring(0, 50)}${promptText.length > 50 ? '...' : ''}"`
-        });
-        if (runApproval !== 'Yes') {
-            logInteraction('INFO', 'RUN_REQUEST_DENIED', promptText);
-            historyProvider.add(new HistoryItem('Run Request Denied', promptText.substring(0, 50)));
-            vscode.window.showInformationMessage('Run request denied by user.');
-            return;
-        }
-    }
-
+async function sendPromptToChat(promptText: string) {
     if (promptCount >= MAX_PROMPTS_PER_SESSION) {
-        try {
-            await vscode.commands.executeCommand('workbench.action.closePanel');
-            promptCount = 0;
-            logInteraction('INFO', 'CHAT_SESSION_RESET', 'Session reset after max prompts.');
-            vscode.window.showInformationMessage('Chat session reset.');
-        } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : String(err);
-            logInteraction('ERROR', 'SESSION_RESET_FAILED', errorMessage);
-            vscode.window.showErrorMessage(`Failed to reset chat session: ${errorMessage}`);
-        }
+        // Try to close and reopen chat to reset context
+        await vscode.commands.executeCommand('workbench.action.closePanel');
+        promptCount = 0;
+        logInteraction('INFO', 'CHAT_SESSION_RESET', 'Session reset after max prompts.');
     }
-    try {
-        await vscode.commands.executeCommand('workbench.action.chat.open', promptText);
-        promptCount++;
-        logInteraction('INFO', 'PROMPT_SENT', promptText);
-        historyProvider.add(new HistoryItem('Prompt Sent', promptText.substring(0, 50)));
-        vscode.window.showInformationMessage('Prompt sent to Copilot.');
-    } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        logInteraction('ERROR', 'PROMPT_SEND_FAILED', errorMessage);
-        vscode.window.showErrorMessage(`Failed to send prompt: ${errorMessage}`);
-    }
+    await vscode.commands.executeCommand('workbench.action.chat.open', promptText);
+    promptCount++;
+    logInteraction('INFO', 'PROMPT_SENT', promptText);
 }
 
 // --- Accept Copilot Suggestion ---
@@ -699,134 +474,73 @@ async function acceptCopilotSuggestion() {
     try {
         await vscode.commands.executeCommand('editor.action.inlineSuggest.commit');
         logInteraction('INFO', 'SUGGESTION_ACCEPTED', 'Accepted inline suggestion.');
-        vscode.window.showInformationMessage('Accepted Copilot suggestion.');
-    } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        logInteraction('ERROR', 'SUGGESTION_ACCEPT_FAILED', errorMessage);
-        vscode.window.showErrorMessage(`Failed to accept suggestion: ${errorMessage}`);
+    } catch (err) {
+        logInteraction('ERROR', 'SUGGESTION_ACCEPT_FAILED', err);
     }
 }
 
-// --- Read Context for Agent Cooperation ---
+// --- Read Copilot Chat Response (placeholder) ---
 async function getLastCopilotChatResponse(): Promise<string> {
-    if (CONTEXT_SOURCE === 'chat') {
-        // Placeholder for future Copilot chat API integration
-        logInteraction('INFO', 'CONTEXT_SOURCE', 'Chat context not yet supported, falling back to editor.');
-        vscode.window.showInformationMessage('Copilot chat context not supported, using editor context.');
-        return 'Copilot chat response not available.';
-    }
-    const editor = vscode.window.activeTextEditor;
-    if (editor) {
-        const document = editor.document;
-        const selection = editor.selection;
-        const selectedText = document.getText(selection);
-        const context = selectedText || document.getText();
-        logInteraction('INFO', 'CONTEXT_SOURCE', 'Using editor context.');
-        return context || 'No content in active editor.';
-    }
-    logInteraction('WARNING', 'CONTEXT_SOURCE', 'No active editor found.');
-    vscode.window.showWarningMessage('No active editor found for context.');
-    return 'No active editor context available.';
+    // TODO: Implement using VS Code API or UI observation if/when available
+    // For now, return a placeholder
+    return 'Copilot response placeholder.';
 }
 
-// --- Main Agent Cooperation ---
-async function agentCooperationMain(goal: string, historyProvider: HistoryProvider, context: vscode.ExtensionContext) {
-    while (agentCooperationActive) {
+// --- Main Automation Loop ---
+async function automationMainLoop(goal: string) {
+    while (automationActive) {
+        // 1. Read Copilot's last response
         const lastResponse = await getLastCopilotChatResponse();
-        const fileContents = await getFilesForLLMReview(context);
-        const specContents = await fetchSpecResources();
-        if (lastResponse.includes('No active editor')) {
-            historyProvider.add(new HistoryItem('Warning', 'No editor context available for prompt generation.'));
-        }
-        if (fileContents === 'No file content available for review.') {
-            historyProvider.add(new HistoryItem('Warning', 'No files selected or matched for LLM review.'));
-        }
-        if (specContents === 'No specification resource content available.') {
-            historyProvider.add(new HistoryItem('Warning', 'No specification resources available.'));
-        }
-        const contextualInfo = lastResponse.includes('No active editor') || lastResponse.includes('not available')
-            ? `Current goal: ${goal}. No prior response available.`
-            : `Prior response: ${lastResponse}. Goal: ${goal}.`;
-        let nextPrompt = await generatePromptFromLocalLLM(contextualInfo, fileContents, specContents);
-        if (!nextPrompt) {
-            // Retry with specification resources if prompt generation fails
-            historyProvider.add(new HistoryItem('Warning', 'Failed to generate prompt, retrying with specifications.'));
-            nextPrompt = await generatePromptFromLocalLLM(contextualInfo, fileContents, specContents, true);
-        }
-        if (nextPrompt) {
-            await sendPromptToChat(nextPrompt, historyProvider);
-            await acceptCopilotSuggestion();
-        } else {
-            historyProvider.add(new HistoryItem('Error', 'Failed to generate next prompt.'));
-            logInteraction('ERROR', 'PROMPT_GENERATION_FAILED', 'No prompt returned from LLM.');
-            vscode.window.showErrorMessage('Failed to generate next prompt.');
-        }
+        // 2. Generate next prompt using local LLM
+        const nextPrompt = await generatePromptFromLocalLLM(
+            `Given this response from my coding assistant: "${lastResponse}", what should my next question be to achieve: ${goal}?`
+        );
+        // 3. Send prompt to Copilot Chat
+        await sendPromptToChat(nextPrompt);
+        // 4. Optionally accept Copilot suggestion
+        await acceptCopilotSuggestion();
+        // 5. Wait or break if stopped
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
 }
 
+// --- Extension Activation ---
 // --- Automation File Discovery ---
+import * as glob from 'glob';
+
+/**
+ * Looks for an automation JSON file in the workspace root or a user-specified location.
+ * @param workspaceFolders VS Code workspace folders
+ * @param userPath Optional user-specified path
+ * @returns The absolute path to the automation file, or undefined if not found
+ */
 function findAutomationFile(workspaceFolders: readonly vscode.WorkspaceFolder[] | undefined, userPath?: string): string | undefined {
     if (userPath && fs.existsSync(userPath) && userPath.endsWith('.json')) {
-        try {
-            const content = fs.readFileSync(userPath, 'utf-8');
-            JSON.parse(content); // Validate JSON
-            return userPath;
-        } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : String(err);
-            logInteraction('ERROR', 'INVALID_AUTOMATION_FILE', `Invalid JSON in ${userPath}: ${errorMessage}`);
-            vscode.window.showErrorMessage(`Invalid automation file ${userPath}: ${errorMessage}`);
-            return undefined;
-        }
+        return userPath;
     }
-    if (!workspaceFolders || workspaceFolders.length === 0) {
-        logInteraction('WARNING', 'NO_WORKSPACE', 'No workspace folders found for automation file discovery.');
-        vscode.window.showWarningMessage('No workspace open for automation file discovery.');
-        return undefined;
-    }
+    if (!workspaceFolders || workspaceFolders.length === 0) return undefined;
     const root = workspaceFolders[0].uri.fsPath;
+    // Look for automation*.json or *.automation.json in root
     const candidates = glob.sync('{automation*.json,*.automation.json}', { cwd: root, absolute: true });
-    for (const candidate of candidates) {
-        try {
-            const content = fs.readFileSync(candidate, 'utf-8');
-            JSON.parse(content); // Validate JSON
-            return candidate;
-        } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : String(err);
-            logInteraction('ERROR', 'INVALID_AUTOMATION_FILE', `Invalid JSON in ${candidate}: ${errorMessage}`);
-            vscode.window.showErrorMessage(`Invalid automation file ${path.basename(candidate)}: ${errorMessage}`);
-        }
-    }
-    logInteraction('INFO', 'NO_AUTOMATION_FILE', 'No valid automation file found.');
-    vscode.window.showInformationMessage('No valid automation file found.');
-    return undefined;
+    return candidates.length > 0 ? candidates[0] : undefined;
 }
 
-// --- Extension Activation ---
 export function activate(context: vscode.ExtensionContext) {
+    // --- Automation History/Logs Tree View ---
     const historyProvider = new HistoryProvider();
     vscode.window.registerTreeDataProvider('copilotAutomatorHistory', historyProvider);
-
-    const commandsJsonPath = context.asAbsolutePath('copilot-automator-commands.json');
-    let commandsJson;
-    try {
-        const content = fs.readFileSync(commandsJsonPath, 'utf-8');
-        commandsJson = JSON.parse(content);
-    } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        logInteraction('ERROR', 'COMMANDS_JSON_INVALID', `Failed to load commands JSON: ${errorMessage}`);
-        vscode.window.showErrorMessage(`Failed to load commands JSON: ${errorMessage}`);
-        commandsJson = { commands: [] };
-    }
+    // --- Available Commands Tree View ---
+    const commandsJson = require(context.asAbsolutePath('copilot-automator-commands.json'));
     const commandsProvider = new CommandsProvider(commandsJson);
     vscode.window.registerTreeDataProvider('copilotAutomatorCommands', commandsProvider);
     context.subscriptions.push(
         vscode.commands.registerCommand('copilot-automator.runCommand', (cmd: string) => {
+            // For demo: just log and show
             historyProvider.add(new HistoryItem(`Command: ${cmd}`, 'Clicked in Available Commands'));
             vscode.window.showInformationMessage(`Command triggered: ${cmd}`);
         })
     );
-
+    // Register LLM Models Tree View
     const modelsProvider = new LLMModelsProvider(context);
     vscode.window.registerTreeDataProvider('copilotAutomatorModels', modelsProvider);
     context.subscriptions.push(
@@ -835,32 +549,39 @@ export function activate(context: vscode.ExtensionContext) {
             await modelsProvider.selectModel(model);
         })
     );
+    // Initial fetch
     modelsProvider.refresh();
-
+    // Helper to send dialogue to the panel
     function postDialogue(text: string) {
         for (const sub of context.subscriptions) {
             if (sub instanceof AutomatorPanelProvider && sub['_view']) {
                 sub['_view'].webview.postMessage({ type: 'dialogue', text });
             }
         }
-        historyProvider.add(new HistoryItem(text, 'Dialogue'));
+        // Also log to history
+        if (historyProvider) {
+            historyProvider.add(new HistoryItem(text, 'Dialogue'));
+        }
     }
-
     logFilePath = path.join(context.extensionPath, 'copilot_interactions.log');
 
+    // Load settings from globalState
     LLM_API_URL = context.globalState.get('llmApiUrl', LLM_API_URL);
     LLM_MODEL = context.globalState.get('llmModel', LLM_MODEL);
     LLM_TEMPERATURE = context.globalState.get('llmTemp', LLM_TEMPERATURE);
     MAX_PROMPTS_PER_SESSION = context.globalState.get('maxPrompts', MAX_PROMPTS_PER_SESSION);
-    CONTEXT_SOURCE = context.globalState.get('contextSource', 'editor');
-    FILE_REVIEW_PATHS = context.globalState.get('fileReviewPaths', '');
-    SPEC_RESOURCE_URLS = context.globalState.get('specResourceUrls', '');
 
+    // Register Activity Bar view provider
     const provider = new AutomatorPanelProvider(context.extensionUri);
+    context.subscriptions.push(provider);
     context.subscriptions.push(
-        vscode.window.registerWebviewViewProvider(AutomatorPanelProvider.viewType, provider)
+        vscode.window.registerWebviewViewProvider(
+            AutomatorPanelProvider.viewType,
+            provider
+        )
     );
-
+    // Listen for messages from the webview panel
+    vscode.window.registerWebviewViewProvider(AutomatorPanelProvider.viewType, provider);
     provider['_view']?.webview.onDidReceiveMessage?.((msg: any) => {
         if (msg.command === 'start') {
             vscode.commands.executeCommand('copilot-automator.start');
@@ -868,41 +589,39 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.commands.executeCommand('copilot-automator.stop');
         } else if (msg.command === 'openSettings') {
             vscode.commands.executeCommand('copilot-automator.openSettings');
-        } else if (msg.command === 'selectFiles') {
-            vscode.commands.executeCommand('copilot-automator.selectFiles');
-        } else if (msg.command === 'manageSpecResources') {
-            vscode.commands.executeCommand('copilot-automator.manageSpecResources');
         } else if (msg.command === 'sendCommand') {
+            // For demo: just echo the command
             postDialogue('Copilot Automator: Command received - ' + msg.value);
         }
     });
 
+    // Register commands
     const startCmd = vscode.commands.registerCommand('copilot-automator.start', async () => {
-        if (agentCooperationActive) {
+        if (automationActive) {
             vscode.window.showInformationMessage('Copilot Automator is already running.');
             return;
         }
-        agentCooperationActive = true;
+        automationActive = true;
         promptCount = 0;
-        const goal = await vscode.window.showInputBox({ prompt: 'What is your cooperation goal for Copilot?' });
+        const goal = await vscode.window.showInputBox({ prompt: 'What is your automation goal for Copilot?' });
         if (!goal) {
-            vscode.window.showWarningMessage('No goal provided. Cooperation cancelled.');
-            agentCooperationActive = false;
+            vscode.window.showWarningMessage('No goal provided. Automation cancelled.');
+            automationActive = false;
             return;
         }
-        logInteraction('INFO', 'AGENT_COOPERATION_STARTED', goal);
-        historyProvider.add(new HistoryItem('Cooperation started', goal));
-        agentCooperationLoop = setTimeout(() => agentCooperationMain(goal, historyProvider, context), 0);
+        logInteraction('INFO', 'AUTOMATION_STARTED', goal);
+        historyProvider.add(new HistoryItem('Automation started', goal));
+        automationLoop = setTimeout(() => automationMainLoop(goal), 0);
     });
 
     const stopCmd = vscode.commands.registerCommand('copilot-automator.stop', () => {
-        agentCooperationActive = false;
-        if (agentCooperationLoop) {
-            clearTimeout(agentCooperationLoop);
-            agentCooperationLoop = undefined;
+        automationActive = false;
+        if (automationLoop) {
+            clearTimeout(automationLoop);
+            automationLoop = undefined;
         }
-        logInteraction('INFO', 'AGENT_COOPERATION_STOPPED', 'Cooperation stopped by user.');
-        historyProvider.add(new HistoryItem('Cooperation stopped', 'Stopped by user'));
+        logInteraction('INFO', 'AUTOMATION_STOPPED', 'Automation stopped by user.');
+        historyProvider.add(new HistoryItem('Automation stopped', 'Stopped by user'));
         vscode.window.showInformationMessage('Copilot Automator stopped.');
     });
 
@@ -910,37 +629,13 @@ export function activate(context: vscode.ExtensionContext) {
         openSettingsPanel(context);
     });
 
-    const selectFilesCmd = vscode.commands.registerCommand('copilot-automator.selectFiles', async () => {
-        const files = await vscode.window.showOpenDialog({
-            canSelectFiles: true,
-            canSelectFolders: false,
-            canSelectMany: true,
-            openLabel: 'Select Files for LLM Review'
-        });
-        if (files && files.length > 0) {
-            selectedFiles = files.map(file => file.fsPath);
-            const fileNames = selectedFiles.map(f => path.basename(f)).join(', ');
-            logInteraction('INFO', 'FILES_SELECTED', `Selected files: ${fileNames}`);
-            historyProvider.add(new HistoryItem('Files Selected', fileNames));
-            vscode.window.showInformationMessage(`Selected ${selectedFiles.length} file(s) for LLM review.`);
-        } else {
-            logInteraction('INFO', 'FILES_SELECTION_CANCELLED', 'No files selected.');
-            historyProvider.add(new HistoryItem('No Files Selected', 'File selection cancelled.'));
-            vscode.window.showInformationMessage('No files selected for LLM review.');
-        }
-    });
-
-    const manageSpecResourcesCmd = vscode.commands.registerCommand('copilot-automator.manageSpecResources', () => {
-        openSpecResourcesPanel(context);
-    });
-
-    context.subscriptions.push(startCmd, stopCmd, openSettingsCmd, selectFilesCmd, manageSpecResourcesCmd);
+    context.subscriptions.push(startCmd, stopCmd, openSettingsCmd);
 }
 
 export function deactivate() {
-    agentCooperationActive = false;
-    if (agentCooperationLoop) {
-        clearTimeout(agentCooperationLoop);
-        agentCooperationLoop = undefined;
+    automationActive = false;
+    if (automationLoop) {
+        clearTimeout(automationLoop);
+        automationLoop = undefined;
     }
 }
