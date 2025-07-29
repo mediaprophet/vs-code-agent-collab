@@ -436,12 +436,13 @@ function logInteraction(logLevel: string, action: string, message: any) {
         action,
         message
     };
-    fs.appendFile(logFilePath, JSON.stringify(entry) + '\n', err => {
-        if (err) {
-            console.error('Failed to write log:', err);
-            vscode.window.showErrorMessage(`Failed to write to log file: ${err.message}`);
-        }
-    });
+    try {
+        fs.appendFileSync(logFilePath, JSON.stringify(entry) + '\n');
+    } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        console.error('Failed to write log:', errorMessage);
+        vscode.window.showErrorMessage(`Failed to write to log file: ${errorMessage}`);
+    }
 }
 
 // --- Create Instructions Folder ---
@@ -459,10 +460,10 @@ function ensureInstructionsFolder(workspaceFolders: readonly vscode.WorkspaceFol
             logInteraction('INFO', 'INSTRUCTIONS_FOLDER_CREATED', `Created instructions folder at ${instructionsDir}`);
             vscode.window.showInformationMessage(`Created instructions folder at ${instructionsDir}`);
         }
-    } catch (err) {
-        logInteraction('ERROR', 'INSTRUCTIONS_FOLDER_CREATION_FAILED', err);
-        const errorMsg = (err instanceof Error) ? err.message : String(err);
-        vscode.window.showErrorMessage(`Failed to create instructions folder: ${errorMsg}`);
+    } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        logInteraction('ERROR', 'INSTRUCTIONS_FOLDER_CREATION_FAILED', errorMessage);
+        vscode.window.showErrorMessage(`Failed to create instructions folder: ${errorMessage}`);
         return undefined;
     }
     return instructionsDir;
@@ -495,19 +496,19 @@ async function getFilesForLLMReview(context: vscode.ExtensionContext): Promise<s
                 if (filePath.startsWith(path.join(workspaceFolders?.[0].uri.fsPath || '', 'instructions')) && filePath.endsWith('.json')) {
                     try {
                         JSON.parse(content);
-                    } catch (err) {
-                        const errorMsg = (err instanceof Error) ? err.message : String(err);
-                        logInteraction('ERROR', 'INVALID_JSON', `Invalid JSON in ${filePath}: ${errorMsg}`);
-                        vscode.window.showErrorMessage(`Invalid JSON in ${path.basename(filePath)}: ${errorMsg}`);
+                    } catch (err: unknown) {
+                        const errorMessage = err instanceof Error ? err.message : String(err);
+                        logInteraction('ERROR', 'INVALID_JSON', `Invalid JSON in ${filePath}: ${errorMessage}`);
+                        vscode.window.showErrorMessage(`Invalid JSON in ${path.basename(filePath)}: ${errorMessage}`);
                         continue;
                     }
                 }
                 fileContents += `\n\nFile: ${filePath}\n${content}`;
                 logInteraction('INFO', 'FILE_REVIEW', `Read file: ${filePath}`);
-            } catch (err) {
-                const errorMsg = (err instanceof Error) ? err.message : String(err);
-                logInteraction('ERROR', 'FILE_READ_FAILED', `Failed to read file ${filePath}: ${errorMsg}`);
-                vscode.window.showErrorMessage(`Failed to read file ${path.basename(filePath)}: ${errorMsg}`);
+            } catch (err: unknown) {
+                const errorMessage = err instanceof Error ? err.message : String(err);
+                logInteraction('ERROR', 'FILE_READ_FAILED', `Failed to read file ${filePath}: ${errorMessage}`);
+                vscode.window.showErrorMessage(`Failed to read file ${path.basename(filePath)}: ${errorMessage}`);
             }
         }
     }
@@ -531,25 +532,25 @@ async function getFilesForLLMReview(context: vscode.ExtensionContext): Promise<s
                         if (filePath.startsWith(path.join(root, 'instructions')) && filePath.endsWith('.json')) {
                             try {
                                 JSON.parse(content);
-                            } catch (err) {
-                                const errorMsg = (err instanceof Error) ? err.message : String(err);
-                                logInteraction('ERROR', 'INVALID_JSON', `Invalid JSON in ${filePath}: ${errorMsg}`);
-                                vscode.window.showErrorMessage(`Invalid JSON in ${path.basename(filePath)}: ${errorMsg}`);
+                            } catch (err: unknown) {
+                                const errorMessage = err instanceof Error ? err.message : String(err);
+                                logInteraction('ERROR', 'INVALID_JSON', `Invalid JSON in ${filePath}: ${errorMessage}`);
+                                vscode.window.showErrorMessage(`Invalid JSON in ${path.basename(filePath)}: ${errorMessage}`);
                                 continue;
                             }
                         }
                         fileContents += `\n\nFile: ${filePath}\n${content}`;
                         logInteraction('INFO', 'FILE_REVIEW', `Read file: ${filePath}`);
-                    } catch (err) {
-                        const errorMsg = (err instanceof Error) ? err.message : String(err);
-                        logInteraction('ERROR', 'FILE_READ_FAILED', `Failed to read file ${filePath}: ${errorMsg}`);
-                        vscode.window.showErrorMessage(`Failed to read file ${path.basename(filePath)}: ${errorMsg}`);
+                    } catch (err: unknown) {
+                        const errorMessage = err instanceof Error ? err.message : String(err);
+                        logInteraction('ERROR', 'FILE_READ_FAILED', `Failed to read file ${filePath}: ${errorMessage}`);
+                        vscode.window.showErrorMessage(`Failed to read file ${path.basename(filePath)}: ${errorMessage}`);
                     }
                 }
-            } catch (err) {
-                const errorMsg = (err instanceof Error) ? err.message : String(err);
-                logInteraction('ERROR', 'PATTERN_PROCESSING_FAILED', `Failed to process pattern ${pattern}: ${errorMsg}`);
-                vscode.window.showErrorMessage(`Failed to process file pattern ${pattern}: ${errorMsg}`);
+            } catch (err: unknown) {
+                const errorMessage = err instanceof Error ? err.message : String(err);
+                logInteraction('ERROR', 'PATTERN_PROCESSING_FAILED', `Failed to process pattern ${pattern}: ${errorMessage}`);
+                vscode.window.showErrorMessage(`Failed to process file pattern ${pattern}: ${errorMessage}`);
             }
         }
     }
@@ -572,20 +573,20 @@ async function fetchSpecResources(): Promise<string> {
             if (!url.startsWith('http://') && !url.startsWith('https://')) {
                 throw new Error('Invalid protocol');
             }
-        } catch (err) {
-            const errorMsg = (err instanceof Error) ? err.message : String(err);
-            logInteraction('ERROR', 'INVALID_URL', `Invalid URL ${url}: ${errorMsg}`);
-            vscode.window.showErrorMessage(`Invalid URL ${url}: ${errorMsg}`);
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            logInteraction('ERROR', 'INVALID_URL', `Invalid URL ${url}: ${errorMessage}`);
+            vscode.window.showErrorMessage(`Invalid URL ${url}: ${errorMessage}`);
             continue;
         }
         try {
             const response = await axios.get(url, { timeout: 5000 }); // 5-second timeout
             specContent += `\n\nSpecification Resource: ${url}\n${response.data}`;
             logInteraction('INFO', 'SPEC_RESOURCE_FETCHED', `Fetched content from ${url}`);
-        } catch (err) {
-            const errorMsg = (err instanceof Error) ? err.message : String(err);
-            logInteraction('ERROR', 'SPEC_RESOURCE_FETCH_FAILED', `Failed to fetch ${url}: ${errorMsg}`);
-            vscode.window.showErrorMessage(`Failed to fetch specification resource ${url}: ${errorMsg}`);
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            logInteraction('ERROR', 'SPEC_RESOURCE_FETCH_FAILED', `Failed to fetch ${url}: ${errorMessage}`);
+            vscode.window.showErrorMessage(`Failed to fetch specification resource ${url}: ${errorMessage}`);
         }
     }
     if (!specContent) {
@@ -627,10 +628,10 @@ async function generatePromptFromLocalLLM(contextualInfo: string, fileContents: 
         }
 
         return content;
-    } catch (error) {
-        const errorMsg = (error instanceof Error) ? error.message : String(error);
-        logInteraction('ERROR', 'LOCAL_LLM_REQUEST', errorMsg);
-        vscode.window.showErrorMessage(`LLM request failed: ${errorMsg}`);
+    } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        logInteraction('ERROR', 'LOCAL_LLM_REQUEST', errorMessage);
+        vscode.window.showErrorMessage(`LLM request failed: ${errorMessage}`);
         return '';
     }
 }
@@ -673,10 +674,10 @@ async function sendPromptToChat(promptText: string, historyProvider: HistoryProv
             promptCount = 0;
             logInteraction('INFO', 'CHAT_SESSION_RESET', 'Session reset after max prompts.');
             vscode.window.showInformationMessage('Chat session reset.');
-        } catch (err) {
-            const errorMsg = (err instanceof Error) ? err.message : String(err);
-            logInteraction('ERROR', 'SESSION_RESET_FAILED', errorMsg);
-            vscode.window.showErrorMessage(`Failed to reset chat session: ${errorMsg}`);
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            logInteraction('ERROR', 'SESSION_RESET_FAILED', errorMessage);
+            vscode.window.showErrorMessage(`Failed to reset chat session: ${errorMessage}`);
         }
     }
     try {
@@ -685,10 +686,10 @@ async function sendPromptToChat(promptText: string, historyProvider: HistoryProv
         logInteraction('INFO', 'PROMPT_SENT', promptText);
         historyProvider.add(new HistoryItem('Prompt Sent', promptText.substring(0, 50)));
         vscode.window.showInformationMessage('Prompt sent to Copilot.');
-    } catch (err) {
-        const errorMsg = (err instanceof Error) ? err.message : String(err);
-        logInteraction('ERROR', 'PROMPT_SEND_FAILED', errorMsg);
-        vscode.window.showErrorMessage(`Failed to send prompt: ${errorMsg}`);
+    } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        logInteraction('ERROR', 'PROMPT_SEND_FAILED', errorMessage);
+        vscode.window.showErrorMessage(`Failed to send prompt: ${errorMessage}`);
     }
 }
 
@@ -699,10 +700,10 @@ async function acceptCopilotSuggestion() {
         await vscode.commands.executeCommand('editor.action.inlineSuggest.commit');
         logInteraction('INFO', 'SUGGESTION_ACCEPTED', 'Accepted inline suggestion.');
         vscode.window.showInformationMessage('Accepted Copilot suggestion.');
-    } catch (err) {
-        const errorMsg = (err instanceof Error) ? err.message : String(err);
-        logInteraction('ERROR', 'SUGGESTION_ACCEPT_FAILED', errorMsg);
-        vscode.window.showErrorMessage(`Failed to accept suggestion: ${errorMsg}`);
+    } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        logInteraction('ERROR', 'SUGGESTION_ACCEPT_FAILED', errorMessage);
+        vscode.window.showErrorMessage(`Failed to accept suggestion: ${errorMessage}`);
     }
 }
 
@@ -771,10 +772,10 @@ function findAutomationFile(workspaceFolders: readonly vscode.WorkspaceFolder[] 
             const content = fs.readFileSync(userPath, 'utf-8');
             JSON.parse(content); // Validate JSON
             return userPath;
-        } catch (err) {
-            const errorMsg = (err instanceof Error) ? err.message : String(err);
-            logInteraction('ERROR', 'INVALID_AUTOMATION_FILE', `Invalid JSON in ${userPath}: ${errorMsg}`);
-            vscode.window.showErrorMessage(`Invalid automation file ${userPath}: ${errorMsg}`);
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            logInteraction('ERROR', 'INVALID_AUTOMATION_FILE', `Invalid JSON in ${userPath}: ${errorMessage}`);
+            vscode.window.showErrorMessage(`Invalid automation file ${userPath}: ${errorMessage}`);
             return undefined;
         }
     }
@@ -790,10 +791,10 @@ function findAutomationFile(workspaceFolders: readonly vscode.WorkspaceFolder[] 
             const content = fs.readFileSync(candidate, 'utf-8');
             JSON.parse(content); // Validate JSON
             return candidate;
-        } catch (err) {
-            const errorMsg = (err instanceof Error) ? err.message : String(err);
-            logInteraction('ERROR', 'INVALID_AUTOMATION_FILE', `Invalid JSON in ${candidate}: ${errorMsg}`);
-            vscode.window.showErrorMessage(`Invalid automation file ${path.basename(candidate)}: ${errorMsg}`);
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            logInteraction('ERROR', 'INVALID_AUTOMATION_FILE', `Invalid JSON in ${candidate}: ${errorMessage}`);
+            vscode.window.showErrorMessage(`Invalid automation file ${path.basename(candidate)}: ${errorMessage}`);
         }
     }
     logInteraction('INFO', 'NO_AUTOMATION_FILE', 'No valid automation file found.');
@@ -811,10 +812,10 @@ export function activate(context: vscode.ExtensionContext) {
     try {
         const content = fs.readFileSync(commandsJsonPath, 'utf-8');
         commandsJson = JSON.parse(content);
-    } catch (err) {
-        const errorMsg = (err instanceof Error) ? err.message : String(err);
-        logInteraction('ERROR', 'COMMANDS_JSON_INVALID', `Failed to load commands JSON: ${errorMsg}`);
-        vscode.window.showErrorMessage(`Failed to load commands JSON: ${errorMsg}`);
+    } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        logInteraction('ERROR', 'COMMANDS_JSON_INVALID', `Failed to load commands JSON: ${errorMessage}`);
+        vscode.window.showErrorMessage(`Failed to load commands JSON: ${errorMessage}`);
         commandsJson = { commands: [] };
     }
     const commandsProvider = new CommandsProvider(commandsJson);
