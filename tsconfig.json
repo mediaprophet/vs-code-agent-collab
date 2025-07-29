@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES2022",
     "module": "commonjs",
-    "lib": ["ES2020", "DOM"],
+    "lib": ["ES2022"],
     "outDir": "out",
     "rootDir": "src",
     "strict": true,
@@ -12,6 +12,9 @@
     "strictBindCallApply": true,
     "noImplicitThis": true,
     "alwaysStrict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -20,6 +23,6 @@
     "sourceMap": true,
     "declaration": true
   },
-  "include": ["src"],
+  "include": ["src", "new_old_extension.ts.old", "old_extension.ts.old"],
   "exclude": ["node_modules", ".vscode-test"]
 }
