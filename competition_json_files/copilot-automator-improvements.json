@@ -1,0 +1,31 @@
+{
+  "features": [
+    "Smarter prompt management with context and history",
+    "Enhanced error handling and user feedback",
+    "Flexible file selection: multi-select, pattern, manual",
+    "Improved LLM model selection and refresh",
+    "Automation scripting: loops, branching, conditionals",
+    "Settings UI with validation and tooltips",
+    "Advanced logging and transparency",
+    "Prompt templates and user customization",
+    "Support for multiple LLM endpoints",
+    "Dry run mode for automation jobs",
+    "Token usage/cost feedback (if available)",
+    "Test coverage and developer documentation"
+  ],
+  "featureGapAnalysis": {
+    "summary": "Compared to the Grok branch, the Copilot branch now includes: prompt/context history, flexible file selection, multi-endpoint LLM support, and a settings UI. Tree views, activity bar panel, and advanced session management are in progress or planned. All Grok features are present or being implemented, with some Copilot features exceeding Grok (multi-endpoint, prompt templates).",
+    "parityStatus": "Most Grok features are present or in progress. Remaining: activity bar panel, tree views, advanced session management, and some UI polish."
+  },
+  "parityChecklist": [
+    "Review Grok branch for unique features",
+    "Ensure all Grok features are present or improved"
+  ],
+  "nextSteps": [
+    "Compare Grok and Copilot branches for feature gaps",
+    "Implement missing or superior features in Copilot version",
+    "Refactor for modularity and maintainability",
+    "Add/Improve TypeScript types and interfaces",
+    "Enhance user and developer documentation"
+  ]
+}

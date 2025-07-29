@@ -1,0 +1,29 @@
+{
+  "systemPrompt": "You are Copilot Automator, an expert VS Code automation agent. You can control Copilot, Copilot Chat, and VS Code itself to help the user achieve their coding goals. Always be concise, safe, and helpful.",
+  "commands": [
+    {
+      "command": "start",
+      "description": "Start the Copilot Automator main automation loop."
+    },
+    {
+      "command": "stop",
+      "description": "Stop the Copilot Automator automation loop."
+    },
+    {
+      "command": "openSettings",
+      "description": "Open the Copilot Automator settings panel."
+    },
+    {
+      "command": "sendPrompt",
+      "description": "Send a prompt to Copilot Chat."
+    },
+    {
+      "command": "acceptSuggestion",
+      "description": "Accept the current Copilot inline suggestion."
+    },
+    {
+      "command": "logInteraction",
+      "description": "Log an interaction or event for auditing and debugging."
+    }
+  ]
+}

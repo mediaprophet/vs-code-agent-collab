@@ -358,7 +358,8 @@ function openSettingsPanel(context: vscode.ExtensionContext) {
         maxPrompts: context.globalState.get('maxPrompts', MAX_PROMPTS_PER_SESSION),
         contextSource: context.globalState.get('contextSource', 'editor'),
         fileReviewPaths: context.globalState.get('fileReviewPaths', ''),
-        specResourceUrls: context.globalState.get('specResourceUrls', '')
+        specResourceUrls: context.globalState.get('specResourceUrls', ''),
+        llmEndpoints: LLM_ENDPOINTS
     };
     panel.webview.html = getSettingsHtml(settings);
     panel.webview.onDidReceiveMessage(async (msg: any) => {
@@ -380,58 +381,6 @@ function openSettingsPanel(context: vscode.ExtensionContext) {
             vscode.window.showInformationMessage('Copilot Automator settings saved.');
         }
     });
-}
-
-function getSettingsHtml(settings: { llmApiUrl: string, llmModel: string, llmTemp: number, maxPrompts: number, contextSource: string, fileReviewPaths: string, specResourceUrls: string }): string {
-    return `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Copilot Automator Settings</title>
-            <style>
-                body { font-family: sans-serif; margin: 1em; }
-                label { display: block; margin: 0.5em 0; }
-                input, select { width: 100%; padding: 0.3em; }
-                button { margin-top: 1em; padding: 0.5em 1em; }
-            </style>
-        </head>
-        <body>
-            <h2>Copilot Automator Settings</h2>
-            <form onsubmit="event.preventDefault(); saveSettings();">
-                <label>LLM API URL: <input type="text" id="llmApiUrl" value="${settings.llmApiUrl}" /></label>
-                <label>Model: <input type="text" id="llmModel" value="${settings.llmModel}" /></label>
-                <label>Temperature: <input type="number" id="llmTemp" value="${settings.llmTemp}" step="0.01" min="0" max="2" /></label>
-                <label>Max Prompts/Session: <input type="number" id="maxPrompts" value="${settings.maxPrompts}" min="1" max="100" /></label>
-                <label>Context Source: 
-                    <select id="contextSource">
-                        <option value="editor" ${settings.contextSource === 'editor' ? 'selected' : ''}>Active Editor</option>
-                        <option value="chat" ${settings.contextSource === 'chat' ? 'selected' : ''}>Copilot Chat (if available)</option>
-                    </select>
-                </label>
-                <label>File Review Paths (e.g., src/*.ts): <input type="text" id="fileReviewPaths" value="${settings.fileReviewPaths}" placeholder="Comma-separated paths or patterns" /></label>
-                <label>Specification Resource URLs (comma-separated): <input type="text" id="specResourceUrls" value="${settings.specResourceUrls}" placeholder="e.g., https://example.com/spec" /></label>
-                <button type="submit">Save</button>
-            </form>
-            <script>
-                const vscode = acquireVsCodeApi();
-                function saveSettings() {
-                    vscode.postMessage({
-                        command: 'saveSettings',
-                        llmApiUrl: document.getElementById('llmApiUrl').value,
-                        llmModel: document.getElementById('llmModel').value,
-                        llmTemp: parseFloat(document.getElementById('llmTemp').value),
-                        maxPrompts: parseInt(document.getElementById('maxPrompts').value, 10),
-                        contextSource: document.getElementById('contextSource').value,
-                        fileReviewPaths: document.getElementById('fileReviewPaths').value,
-                        specResourceUrls: document.getElementById('specResourceUrls').value
-                    });
-                }
-            </script>
-        </body>
-        </html>
-    `;
 }
 
 // --- Specification Resources Panel ---
@@ -544,23 +493,45 @@ class AutomatorPanelProvider implements vscode.WebviewViewProvider {
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50 font-sans p-4">
-    <h2 class="text-2xl font-bold mb-4 text-blue-700">Copilot Automator</h2>
-    <div id="controls" class="flex flex-wrap gap-2 mb-4">
-        <button id="goBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Go</button>
-        <button id="stopBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">Stop</button>
-        <button id="settingsBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Settings</button>
-        <button id="selectFilesBtn" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded">Select Files for Review</button>
-        <button id="specResourcesBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">Spec Resources</button>
-    </div>
-    <div id="dialogue" class="border border-gray-300 bg-white p-2 h-40 overflow-y-auto rounded mb-4 shadow-inner"></div>
-    <form id="commandForm" class="flex gap-2">
-        <input type="text" id="commandInput" placeholder="Type a command (e.g., sendPrompt)" class="flex-1 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400" />
-        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded">Send</button>
-    </form>
+    <header class="flex items-center mb-4">
+        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f916.svg" alt="Robot Icon" class="w-8 h-8 mr-2" />
+        <h2 class="text-2xl font-bold text-blue-700">Copilot Automator</h2>
+    </header>
+    <section aria-label="Automation Controls" class="mb-4">
+        <h3 class="text-lg font-semibold mb-2 flex items-center"><span class="mr-2">⚡</span>Quick Actions</h3>
+        <div id="controls" class="flex flex-wrap gap-2">
+            <button id="goBtn" title="Start automation/cooperation" aria-label="Go" class="transition bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-green-400 flex items-center"><span class="mr-1">▶️</span>Go</button>
+            <button id="pauseBtn" title="Pause automation/cooperation" aria-label="Pause" class="transition bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-orange-400 flex items-center"><span class="mr-1">⏸️</span>Pause</button>
+            <button id="resumeBtn" title="Resume automation/cooperation" aria-label="Resume" class="transition bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-green-400 flex items-center"><span class="mr-1">▶️</span>Resume</button>
+            <button id="stopBtn" title="Stop automation/cooperation" aria-label="Stop" class="transition bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-red-400 flex items-center"><span class="mr-1">⏹️</span>Stop</button>
+            <button id="settingsBtn" title="Open settings panel" aria-label="Settings" class="transition bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center"><span class="mr-1">⚙️</span>Settings</button>
+            <button id="selectFilesBtn" title="Select files for LLM review" aria-label="Select Files" class="transition bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-yellow-400 flex items-center"><span class="mr-1">📂</span>Select Files</button>
+            <button id="specResourcesBtn" title="Manage specification resource URLs" aria-label="Spec Resources" class="transition bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-purple-400 flex items-center"><span class="mr-1">📜</span>Spec Resources</button>
+        </div>
+    </section>
+    <section aria-label="Dialogue Log" class="mb-4">
+        <h3 class="text-lg font-semibold mb-2 flex items-center"><span class="mr-2">💬</span>Dialogue</h3>
+        <div id="dialogue" class="border border-gray-300 bg-white p-2 h-40 overflow-y-auto rounded mb-4 shadow-inner" aria-live="polite"></div>
+    </section>
+    <section aria-label="Send Command">
+        <h3 class="text-lg font-semibold mb-2 flex items-center"><span class="mr-2">⌨️</span>Send Command</h3>
+        <form id="commandForm" class="flex gap-2">
+            <input type="text" id="commandInput" placeholder="Type a command (e.g., sendPrompt)" aria-label="Command Input" class="flex-1 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            <button type="submit" title="Send command to LLM or agent" aria-label="Send" class="transition bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded shadow focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center"><span class="mr-1">📤</span>Send</button>
+        </form>
+    </section>
     <script>
         const vscode = acquireVsCodeApi();
         const dialogue = document.getElementById('dialogue');
         document.getElementById('goBtn').onclick = () => {
+        document.getElementById('pauseBtn').onclick = () => {
+            vscode.postMessage({ command: 'pause' });
+            addDialogue('User: Pause');
+        };
+        document.getElementById('resumeBtn').onclick = () => {
+            vscode.postMessage({ command: 'resume' });
+            addDialogue('User: Resume');
+        };
             vscode.postMessage({ command: 'start' });
             addDialogue('User: Go');
         };
@@ -594,7 +565,11 @@ class AutomatorPanelProvider implements vscode.WebviewViewProvider {
             }
         });
         function addDialogue(text) {
-            dialogue.innerHTML += '<div>' + text + '</div>';
+            const div = document.createElement('div');
+            div.textContent = text;
+            div.className = 'transition-opacity duration-300 opacity-0';
+            dialogue.appendChild(div);
+            setTimeout(() => { div.classList.remove('opacity-0'); div.classList.add('opacity-100'); }, 10);
             dialogue.scrollTop = dialogue.scrollHeight;
         }
     </script>
@@ -615,19 +590,148 @@ let LLM_TEMPERATURE = 0.7;
 let CONTEXT_SOURCE = 'editor';
 let FILE_REVIEW_PATHS: string = '';
 let SPEC_RESOURCE_URLS = ''; // Comma-separated URLs
+let LLM_ENDPOINTS: { label: string; url: string }[] = [
+    { label: 'Copilot (default)', url: 'http://localhost:1234/v1/chat/completions' },
+    { label: 'OpenAI', url: 'https://api.openai.com/v1/chat/completions' },
+    { label: 'Grok', url: 'https://grok.api.example.com/v1/chat/completions' }
+];
 const PROMPT_DELAY_MS = 2000;
 
 // --- State ---
 let promptCount = 0;
 let automationActive = false;
 let automationLoop: NodeJS.Timeout | undefined;
+let automationPaused = false;
+let automationGoal: string | undefined;
 let logFilePath: string;
 let selectedFiles: string[] = [];
 
+// --- Flexible File Selection ---
+async function flexibleFileSelection(context: vscode.ExtensionContext) {
+    const options = [
+        'Multi-select files',
+        'Enter glob pattern',
+        'Manual file path entry'
+    ];
+    const choice = await vscode.window.showQuickPick(options, { placeHolder: 'How would you like to select files for LLM review?' });
+    if (!choice) return;
+    let files: string[] = [];
+    if (choice === 'Multi-select files') {
+        const uris = await vscode.window.showOpenDialog({ canSelectFiles: true, canSelectFolders: false, canSelectMany: true, openLabel: 'Select Files for LLM Review' });
+        if (uris && uris.length > 0) {
+            files = uris.map(u => u.fsPath);
+        }
+    } else if (choice === 'Enter glob pattern') {
+        const pattern = await vscode.window.showInputBox({ prompt: 'Enter a glob pattern (e.g., src/**/*.ts)' });
+        if (pattern) {
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (workspaceFolders && workspaceFolders.length > 0) {
+                const root = workspaceFolders[0].uri.fsPath;
+                const matches = glob.sync(pattern, { cwd: root, absolute: true });
+                files = matches;
+            }
+        }
+    } else if (choice === 'Manual file path entry') {
+        const input = await vscode.window.showInputBox({ prompt: 'Enter file paths, comma-separated' });
+        if (input) {
+                llmEndpoints: LLM_ENDPOINTS
+            files = input.split(',').map(f => f.trim()).filter(Boolean);
+        }
+    }
+    if (files.length > 0) {
+        selectedFiles = files;
+        const fileNames = selectedFiles.map(f => path.basename(f)).join(', ');
+        logInteraction('INFO', 'FLEXIBLE_FILES_SELECTED', `Selected files: ${fileNames}`);
+        vscode.window.showInformationMessage(`Selected ${selectedFiles.length} file(s) for LLM review.`);
+    } else {
+        vscode.window.showWarningMessage('No files selected.');
+    }
+}
+
+// --- Prompt History ---
+interface PromptHistoryEntry {
+    prompt: string;
+    response?: string;
+    timestamp: string;
+}
+let promptHistory: PromptHistoryEntry[] = [];
+
+function addPromptHistory(prompt: string, response?: string) {
+    promptHistory.push({ prompt, response, timestamp: new Date().toISOString() });
+    if (promptHistory.length > 100) promptHistory.shift();
+}
+
+function getPromptHistory(limit = 10): PromptHistoryEntry[] {
+    return promptHistory.slice(-limit);
+}
+
 // --- Constants ---
-const LOG_LEVEL_INFO = 'INFO';
+function getSettingsHtml(settings: { llmApiUrl: string, llmModel: string, llmTemp: number, maxPrompts: number, contextSource: string, fileReviewPaths: string, specResourceUrls: string, llmEndpoints: { label: string; url: string }[] }): string {
+    return `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Copilot Automator Settings</title>
+            <style>
+                body { font-family: sans-serif; margin: 1em; }
+                label { display: block; margin: 0.5em 0; }
+                input, select { width: 100%; padding: 0.3em; }
+                button { margin-top: 1em; padding: 0.5em 1em; }
+            </style>
+        </head>
+        <body>
+            <h2>Copilot Automator Settings</h2>
+            <form onsubmit="event.preventDefault(); saveSettings();">
+                <label>LLM API URL: <input type="text" id="llmApiUrl" value="${settings.llmApiUrl}" /></label>
+                <label>LLM Endpoint:
+                    <select id="llmEndpoint">
+                        ${settings.llmEndpoints.map(e => `<option value="${e.url}" ${e.url === settings.llmApiUrl ? 'selected' : ''}>${e.label}</option>`).join('')}
+                    </select>
+                    <button type="button" onclick="selectLlmEndpoint()">Set Endpoint</button>
+                </label>
+                <label>Model: <input type="text" id="llmModel" value="${settings.llmModel}" /></label>
+                <label>Temperature: <input type="number" id="llmTemp" value="${settings.llmTemp}" step="0.01" min="0" max="2" /></label>
+                <label>Max Prompts/Session: <input type="number" id="maxPrompts" value="${settings.maxPrompts}" min="1" max="100" /></label>
+                <label>Context Source: 
+                    <select id="contextSource">
+                        <option value="editor" ${settings.contextSource === 'editor' ? 'selected' : ''}>Active Editor</option>
+                        <option value="chat" ${settings.contextSource === 'chat' ? 'selected' : ''}>Copilot Chat (if available)</option>
+                    </select>
+                </label>
+                <label>File Review Paths (e.g., src/*.ts): <input type="text" id="fileReviewPaths" value="${settings.fileReviewPaths}" placeholder="Comma-separated paths or patterns" /></label>
+                <label>Specification Resource URLs (comma-separated): <input type="text" id="specResourceUrls" value="${settings.specResourceUrls}" placeholder="e.g., https://example.com/spec" /></label>
+                <button type="submit">Save</button>
+            </form>
+            <script>
+                const vscode = acquireVsCodeApi();
+                function saveSettings() {
+                    vscode.postMessage({
+                        command: 'saveSettings',
+                        llmApiUrl: document.getElementById('llmApiUrl').value,
+                        llmModel: document.getElementById('llmModel').value,
+                        llmTemp: parseFloat(document.getElementById('llmTemp').value),
+                        maxPrompts: parseInt(document.getElementById('maxPrompts').value, 10),
+                        contextSource: document.getElementById('contextSource').value,
+                        fileReviewPaths: document.getElementById('fileReviewPaths').value,
+                        specResourceUrls: document.getElementById('specResourceUrls').value,
+                        llmEndpoints: ${JSON.stringify(settings.llmEndpoints)}
+                    });
+                }
+                function selectLlmEndpoint() {
+                    const url = document.getElementById('llmEndpoint').value;
+                    vscode.postMessage({ command: 'selectLlmEndpoint', url });
+                    document.getElementById('llmApiUrl').value = url;
+                }
+            </script>
+        </body>
+        </html>
+    `;
+}
 const LOG_LEVEL_ERROR = 'ERROR';
 const LOG_LEVEL_WARNING = 'WARNING';
+const LOG_LEVEL_INFO = 'INFO';
 const INSTRUCTIONS_FOLDER = 'instructions';
 
 // --- Logging ---
@@ -796,6 +900,8 @@ async function generatePromptFromLocalLLM(contextualInfo: string, fileContents: 
 
 // --- Copilot Chat Automation ---
 async function sendPromptToChat(promptText: string, historyProvider: HistoryProvider) {
+    // Add to prompt history (pre-response)
+    addPromptHistory(promptText);
     // Approval step
     const approval = await vscode.window.showQuickPick(['Yes', 'No'], {
         placeHolder: `Approve sending this prompt to Copilot? "${promptText}"`
@@ -827,6 +933,7 @@ async function sendPromptToChat(promptText: string, historyProvider: HistoryProv
     promptCount++;
     logInteraction('INFO', 'PROMPT_SENT', promptText);
     historyProvider.add(new HistoryItem('Prompt Sent', promptText));
+    // Optionally, capture response if available in future
 }
 
 // --- Accept Copilot Suggestion ---
@@ -844,8 +951,15 @@ async function acceptCopilotSuggestion() {
 async function getLastCopilotChatResponse(): Promise<string> {
     if (CONTEXT_SOURCE === 'chat') {
         // TODO: When VS Code exposes Copilot Chat API, fetch the last chat response here.
-        logInteraction('INFO', 'CONTEXT_SOURCE', 'Chat context not yet supported. Falling back to editor context.');
-        // Fallback to editor context for now
+        logInteraction('INFO', 'CONTEXT_SOURCE', 'Chat context not yet supported. Falling back to prompt history.');
+        // Use prompt history as fallback context
+        const last = promptHistory.length > 0 ? promptHistory[promptHistory.length - 1] : undefined;
+        if (last && last.response) {
+            return last.response;
+        } else if (last) {
+            return last.prompt;
+        }
+        // Fallback to editor context if no prompt history
     }
     const editor = vscode.window.activeTextEditor;
     if (editor) {
@@ -863,6 +977,10 @@ async function getLastCopilotChatResponse(): Promise<string> {
 // --- Main Automation Loop ---
 async function automationMainLoop(goal: string, historyProvider: HistoryProvider, context: vscode.ExtensionContext) {
     while (automationActive) {
+        if (automationPaused) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+        }
         const lastResponse = await getLastCopilotChatResponse();
         const fileContents = await getFilesForLLMReview(context);
         const specContents = await fetchSpecResources();
@@ -908,6 +1026,29 @@ function findAutomationFile(workspaceFolders: readonly vscode.WorkspaceFolder[] 
 
 // --- Extension Activation ---
 export function activate(context: vscode.ExtensionContext) {
+    // Restore session state if present
+    automationPaused = context.globalState.get('automationPaused', false);
+    automationGoal = context.globalState.get('automationGoal', undefined);
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('copilot-automator.pause', async () => {
+            if (automationActive && !automationPaused) {
+                automationPaused = true;
+                await context.globalState.update('automationPaused', true);
+                vscode.window.showInformationMessage('Copilot Automator paused.');
+            }
+        }),
+        vscode.commands.registerCommand('copilot-automator.resume', async () => {
+            if (automationActive && automationPaused) {
+                automationPaused = false;
+                await context.globalState.update('automationPaused', false);
+                vscode.window.showInformationMessage('Copilot Automator resumed.');
+                if (automationGoal) {
+                    automationLoop = setTimeout(() => automationMainLoop(automationGoal!, historyProvider, context), 0);
+                }
+            }
+        })
+    );
     // Register log viewer command
     const openLogViewerCmd = vscode.commands.registerCommand('copilot-automator.openLogViewer', () => {
         openLogViewerPanel(context);
@@ -1049,6 +1190,7 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
         automationActive = true;
+        automationPaused = false;
         promptCount = 0;
         const goal = await vscode.window.showInputBox({ prompt: 'What is your automation goal for Copilot?' });
         if (!goal) {
@@ -1056,6 +1198,9 @@ export function activate(context: vscode.ExtensionContext) {
             automationActive = false;
             return;
         }
+        automationGoal = goal;
+        await context.globalState.update('automationGoal', goal);
+        await context.globalState.update('automationPaused', false);
         logInteraction('INFO', 'AUTOMATION_STARTED', goal);
         historyProvider.add(new HistoryItem('Automation started', goal));
         automationLoop = setTimeout(() => automationMainLoop(goal, historyProvider, context), 0);
@@ -1063,6 +1208,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     const stopCmd = vscode.commands.registerCommand('copilot-automator.stop', () => {
         automationActive = false;
+        automationPaused = false;
+        automationGoal = undefined;
+        context.globalState.update('automationPaused', false);
+        context.globalState.update('automationGoal', undefined);
         if (automationLoop) {
             clearTimeout(automationLoop);
             automationLoop = undefined;
@@ -1077,20 +1226,11 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     const selectFilesCmd = vscode.commands.registerCommand('copilot-automator.selectFiles', async () => {
-        const files = await vscode.window.showOpenDialog({
-            canSelectFiles: true,
-            canSelectFolders: false,
-            canSelectMany: true,
-            openLabel: 'Select Files for LLM Review'
-        });
-        if (files && files.length > 0) {
-            selectedFiles = files.map((file: vscode.Uri) => file.fsPath);
+        await flexibleFileSelection(context);
+        if (selectedFiles.length > 0) {
             const fileNames = selectedFiles.map(f => path.basename(f)).join(', ');
-            logInteraction('INFO', 'FILES_SELECTED', `Selected files: ${fileNames}`);
             historyProvider.add(new HistoryItem('Files Selected', fileNames));
-            vscode.window.showInformationMessage(`Selected ${selectedFiles.length} file(s) for LLM review.`);
         } else {
-            logInteraction('INFO', 'FILES_SELECTION_CANCELLED', 'No files selected.');
             historyProvider.add(new HistoryItem('No Files Selected', 'File selection cancelled.'));
         }
     });

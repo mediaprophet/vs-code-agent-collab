@@ -1,0 +1,54 @@
+{
+  "tasks": [
+    {
+      "id": "feature-gap-analysis",
+      "description": "Compare Grok and Copilot branches for feature gaps and document differences.",
+      "status": "complete"
+    },
+    {
+      "id": "add-prompt-history",
+      "description": "Implement prompt history and context management for smarter automation.",
+      "status": "complete"
+    },
+    {
+      "id": "flexible-file-selection",
+      "description": "Allow users to select files for review via multi-select, pattern, or manual entry.",
+      "status": "complete"
+    },
+    {
+      "id": "llm-endpoint-support",
+      "description": "Support multiple LLM endpoints and allow user selection.",
+      "status": "complete"
+    },
+    {
+      "id": "automation-scripting-enhancements",
+      "description": "Add support for loops, branching, and conditionals in automation scripts.",
+      "status": "pending"
+    },
+    {
+      "id": "settings-ui-enhancements",
+      "description": "Improve settings UI with validation, tooltips, and better defaults.",
+      "status": "pending"
+    },
+    {
+      "id": "prompt-templates",
+      "description": "Allow user customization of prompt templates.",
+      "status": "pending"
+    },
+    {
+      "id": "dry-run-mode",
+      "description": "Implement a dry run mode for automation jobs.",
+      "status": "pending"
+    },
+    {
+      "id": "token-usage-feedback",
+      "description": "Provide feedback on LLM token usage and cost if available.",
+      "status": "pending"
+    },
+    {
+      "id": "test-coverage",
+      "description": "Add or improve test coverage for core features.",
+      "status": "pending"
+    }
+  ]
+}

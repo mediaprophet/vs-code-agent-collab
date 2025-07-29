@@ -1,0 +1,104 @@
+[
+  {
+    "job": "Implement dynamic command execution for copilot-automator.runCommand.",
+    "details": "Parse and execute commands from copilot-automator-commands.json, not just log and notify." 
+  },
+  {
+    "job": "Enhance getLastCopilotChatResponse to support Copilot chat context.",
+    "details": "Integrate with VS Code API for chat responses when available, fallback to editor otherwise."
+  },
+  {
+    "job": "Validate and handle errors for JSON files in instructions folder.",
+    "details": "Add validation and error handling for malformed or missing JSON files." 
+  },
+  {
+    "job": "Improve performance for large file and URL content fetching.",
+    "details": "Implement chunked reading, progress feedback, and async URL fetching with timeouts." 
+  },
+  {
+    "job": "Enhance UI styling for webview panels.",
+    "details": "Adopt a modern CSS framework (e.g., Tailwind CSS) for all webview panels." 
+  },
+  {
+    "job": "Add log filtering and UI log viewer.",
+    "details": "Provide a UI for viewing, filtering, and searching logs within VS Code." 
+  },
+  {
+    "job": "Provide commands to create template JSON files in instructions folder.",
+    "details": "Add UI and command for generating new instruction templates." 
+  },
+  {
+    "job": "Implement URL caching for specification resources.",
+    "details": "Cache fetched URL content to reduce network requests and improve performance." 
+  },
+  {
+    "job": "Add unit tests for file review, URL fetching, and cooperation logic.",
+    "details": "Set up a test framework and write tests for all major features." 
+  },
+  {
+    "job": "Restrict file reading to trusted workspace paths.",
+    "details": "Add checks to ensure only files within the workspace are read by the extension." 
+  },
+  {
+    "job": "Validate and sanitize specification resource URLs.",
+    "details": "Prevent malicious or malformed URLs from being used in the extension." 
+  },
+  {
+    "job": "Add advanced session management for agent cooperation.",
+    "details": "Support pausing, resuming, and session state persistence." 
+  },
+  {
+    "job": "Improve error handling and user feedback throughout the extension.",
+    "details": "Ensure all errors are logged and surfaced to the user in a friendly way." 
+  },
+  {
+    "job": "Feature gap analysis between Grok and Copilot branches.",
+    "details": "Compare Grok and Copilot branches for feature gaps and document differences. Ensure all Grok features are present or improved in Copilot version.",
+    "status": "complete"
+  },
+  {
+    "job": "Add prompt history and context management.",
+    "details": "Implement prompt history and context management for smarter automation and better LLM results.",
+    "status": "complete"
+  },
+  {
+    "job": "Flexible file selection for review.",
+    "details": "Allow users to select files for review via multi-select, pattern, or manual entry.",
+    "status": "complete"
+  },
+  {
+    "job": "Support multiple LLM endpoints.",
+    "details": "Support multiple LLM endpoints and allow user selection between Copilot, OpenAI, local, etc.",
+    "status": "complete"
+  },
+  {
+    "job": "Automation scripting enhancements.",
+    "details": "Add support for loops, branching, and conditionals in automation scripts.",
+    "status": "pending"
+  },
+  {
+    "job": "Settings UI enhancements.",
+    "details": "Improve settings UI with validation, tooltips, and better defaults.",
+    "status": "pending"
+  },
+  {
+    "job": "Prompt templates and user customization.",
+    "details": "Allow user customization of prompt templates for automation jobs.",
+    "status": "pending"
+  },
+  {
+    "job": "Dry run mode for automation jobs.",
+    "details": "Implement a dry run mode for automation jobs to preview actions.",
+    "status": "pending"
+  },
+  {
+    "job": "Token usage and cost feedback.",
+    "details": "Provide feedback on LLM token usage and cost if available.",
+    "status": "pending"
+  },
+  {
+    "job": "Test coverage and developer documentation.",
+    "details": "Add or improve test coverage for core features and update developer documentation.",
+    "status": "pending"
+  }
+]

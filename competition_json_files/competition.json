@@ -1,0 +1,30 @@
+{
+  "competition": {
+    "copilot_branch": {
+      "name": "copilot",
+      "description": "The GPT-4.1 (Copilot) implementation of the VS Code Automator extension, focused on advanced prompt management, flexible file selection, multi-endpoint LLM support, and robust automation features.",
+      "repo_url": "https://github.com/mediaprophet/vs-code-agent-collab/tree/copilot"
+    },
+    "grok_branch": {
+      "name": "grok",
+      "description": "The Grok-based implementation of the VS Code Automator extension, serving as the main competitor and feature parity benchmark.",
+      "repo_url": "https://github.com/mediaprophet/vs-code-agent-collab/tree/grok"
+    },
+    "goal": "Ensure the Copilot (GPT-4.1) version is more functional, robust, and user-friendly than the Grok version. Achieve and surpass feature parity, track improvements, and continuously enhance the extension based on competitive analysis.",
+    "parityChecklist": [
+      "Review Grok branch for unique features",
+      "Ensure all Grok features are present or improved in Copilot version"
+    ],
+    "trackingFiles": [
+      "copilot-automator-improvements.json",
+      "copilot-automator-jobs.json",
+      "copilot-automator-tasks.json",
+      "copilot-automator-updates.json"
+    ],
+    "reminder": "Always compare against the Grok branch, update tracking files, and prioritize competitive improvements.",
+    "userCommandPolicy": {
+      "onlyCommand": "continue",
+      "description": "The only command the user will provide is 'continue'. The agent should minimize the need for this command and, when received, look to competition.json to determine the next action. The next command should always be defined as 'continue'."
+    }
+  }
+}
