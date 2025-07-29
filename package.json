@@ -112,12 +112,31 @@
         {
           "id": "copilotAutomatorLocalChat",
           "name": "Chat with Local Model",
+          "type": "webview",
           "icon": "images/robot-icon.png"
         }
       ]
     },
     "activationEvents": [
-      "onCommand:copilot-automator.openLocalChat"
+      "onView:copilotAutomatorPanel",
+      "onView:copilotAutomatorModels",
+      "onView:copilotAutomatorHistory",
+      "onView:copilotAutomatorCommands",
+      "onView:copilotAutomatorLocalChat",
+      "onCommand:copilot-automator.openLocalChat",
+      "onCommand:copilot-automator.start",
+      "onCommand:copilot-automator.pause",
+      "onCommand:copilot-automator.resume",
+      "onCommand:copilot-automator.stop",
+      "onCommand:copilot-automator.openSettings",
+      "onCommand:copilot-automator.selectFiles",
+      "onCommand:copilot-automator.manageSpecResources",
+      "onCommand:copilot-automator.createTemplateInstruction",
+      "onCommand:copilot-automator.validateInstructions",
+      "onCommand:copilot-automator.runInstructionFile",
+      "onCommand:copilot-automator.openLogViewer",
+      "onCommand:copilot-automator.refreshModels",
+      "onCommand:copilot-automator.selectModel"
     ]
   },
   "scripts": {
