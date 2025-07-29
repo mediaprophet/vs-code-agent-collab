@@ -1,0 +1,74 @@
+{
+  "tasks": [
+    {
+      "id": "feature-gap-analysis",
+      "description": "Perform automated and manual comparison of Grok and Copilot branches, generate detailed report with metrics.",
+      "status": "complete",
+      "dependencies": [],
+      "priority": "high"
+    },
+    {
+      "id": "add-prompt-history",
+      "description": "Develop advanced prompt history with semantic caching, vector search, and automatic context injection.",
+      "status": "complete",
+      "dependencies": ["feature-gap-analysis"],
+      "priority": "high"
+    },
+    {
+      "id": "flexible-file-selection",
+      "description": "Implement multi-modal file selection with AI-driven relevance scoring and dynamic pattern generation.",
+      "status": "complete",
+      "dependencies": ["add-prompt-history"],
+      "priority": "medium"
+    },
+    {
+      "id": "llm-endpoint-support",
+      "description": "Add support for multiple LLM endpoints with auto-discovery, load balancing, and performance monitoring.",
+      "status": "complete",
+      "dependencies": ["flexible-file-selection"],
+      "priority": "high"
+    },
+    {
+      "id": "automation-scripting-enhancements",
+      "description": "Enhance scripting with full Turing-complete capabilities, including async operations and external API integrations.",
+      "status": "in-progress",
+      "dependencies": ["llm-endpoint-support"],
+      "priority": "high"
+    },
+    {
+      "id": "settings-ui-enhancements",
+      "description": "Overhaul settings UI with reactive forms, live previews, and AI-assisted configuration suggestions.",
+      "status": "pending",
+      "dependencies": ["automation-scripting-enhancements"],
+      "priority": "medium"
+    },
+    {
+      "id": "prompt-templates",
+      "description": "Create marketplace for community-shared prompt templates with version control and auto-update.",
+      "status": "pending",
+      "dependencies": ["settings-ui-enhancements"],
+      "priority": "low"
+    },
+    {
+      "id": "dry-run-mode",
+      "description": "Implement comprehensive dry-run with simulated LLM responses and visual workflow tracing.",
+      "status": "pending",
+      "dependencies": ["prompt-templates"],
+      "priority": "medium"
+    },
+    {
+      "id": "token-usage-feedback",
+      "description": "Integrate real-time token counting with cost projection and optimization recommendations.",
+      "status": "pending",
+      "dependencies": ["dry-run-mode"],
+      "priority": "low"
+    },
+    {
+      "id": "test-coverage",
+      "description": "Achieve 95%+ test coverage with CI/CD integration and automated test generation.",
+      "status": "pending",
+      "dependencies": ["token-usage-feedback"],
+      "priority": "high"
+    }
+  ]
+}

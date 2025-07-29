@@ -1,0 +1,117 @@
+[
+  {
+    "job": "Implement dynamic command execution for copilot-automator.runCommand.",
+    "details": "Parse and execute commands from copilot-automator-commands.json with full scripting support, variable substitution, and error recovery. Exceed Copilot by adding async execution and plugin extensibility.",
+    "status": "planned"
+  },
+  {
+    "job": "Enhance getLastCopilotChatResponse to support Copilot chat context.",
+    "details": "Integrate with VS Code API for real-time chat responses, with fallback to editor and AI-context inference. Add multi-turn history tracking superior to Copilot version.",
+    "status": "planned"
+  },
+  {
+    "job": "Validate and handle errors for JSON files in instructions folder.",
+    "details": "Implement schema validation, auto-correction suggestions, and graceful degradation for malformed JSON. Include visual editor for JSON files.",
+    "status": "planned"
+  },
+  {
+    "job": "Improve performance for large file and URL content fetching.",
+    "details": "Use streaming/chunked reading with progress bars, parallel async fetching with rate limiting, and intelligent caching. Optimize beyond Copilot with AI-prioritized loading.",
+    "status": "planned"
+  },
+  {
+    "job": "Enhance UI styling for webview panels.",
+    "details": "Integrate Tailwind CSS or similar for responsive, theme-aware designs across all panels. Add animations and accessibility features surpassing Copilot.",
+    "status": "planned"
+  },
+  {
+    "job": "Add log filtering and UI log viewer.",
+    "details": "Develop interactive log viewer with real-time filtering, search, export, and visual timelines. Integrate AI-powered log analysis for insights.",
+    "status": "planned"
+  },
+  {
+    "job": "Provide commands to create template JSON files in instructions folder.",
+    "details": "Create UI-driven wizard for template generation with customizable schemas and AI-assisted content filling.",
+    "status": "planned"
+  },
+  {
+    "job": "Implement URL caching for specification resources.",
+    "details": "Add intelligent caching with expiration, offline mode, and delta updates. Include content hashing for change detection.",
+    "status": "planned"
+  },
+  {
+    "job": "Add unit tests for file review, URL fetching, and cooperation logic.",
+    "details": "Achieve 95%+ coverage with Jest or similar, including edge cases, mocks for external APIs, and integration tests. Document test suite.",
+    "status": "planned"
+  },
+  {
+    "job": "Restrict file reading to trusted workspace paths.",
+    "details": "Implement strict path validation with user-configurable allowlists and sandboxing for file operations.",
+    "status": "planned"
+  },
+  {
+    "job": "Validate and sanitize specification resource URLs.",
+    "details": "Use comprehensive URL validation with domain whitelisting, content scanning for malware, and proxy support for privacy.",
+    "status": "planned"
+  },
+  {
+    "job": "Add advanced session management for agent cooperation.",
+    "details": "Support pause/resume with state serialization, multi-session tabs, and collaborative editing integration.",
+    "status": "planned"
+  },
+  {
+    "job": "Improve error handling and user feedback throughout the extension.",
+    "details": "Implement global error boundary with AI-suggested fixes, detailed stack traces in logs, and non-intrusive notifications.",
+    "status": "planned"
+  },
+  {
+    "job": "Feature gap analysis between Grok and Copilot branches.",
+    "details": "Conduct automated semantic code analysis and manual review to ensure Grok superiority; generate visual diff reports.",
+    "status": "complete"
+  },
+  {
+    "job": "Add prompt history and context management.",
+    "details": "Implement vector-based semantic history with automatic summarization and relevance scoring for optimal context injection.",
+    "status": "complete"
+  },
+  {
+    "job": "Flexible file selection for review.",
+    "details": "Develop AI-powered file discovery with semantic search integration for automatic relevant file inclusion.",
+    "status": "complete"
+  },
+  {
+    "job": "Support multiple LLM endpoints.",
+    "details": "Enable seamless switching between endpoints with performance profiling and auto-selection based on task requirements.",
+    "status": "complete"
+  },
+  {
+    "job": "Automation scripting enhancements.",
+    "details": "Add full DSL for automation with visual builder and debugger integration.",
+    "status": "pending"
+  },
+  {
+    "job": "Settings UI enhancements.",
+    "details": "Create reactive, searchable settings panel with AI configuration assistant.",
+    "status": "pending"
+  },
+  {
+    "job": "Prompt templates and user customization.",
+    "details": "Build template marketplace with version control, sharing, and AI-generated templates based on user history.",
+    "status": "pending"
+  },
+  {
+    "job": "Dry run mode for automation jobs.",
+    "details": "Implement full simulation with mocked LLM responses and visual workflow execution preview.",
+    "status": "pending"
+  },
+  {
+    "job": "Token usage and cost feedback.",
+    "details": "Provide real-time token counters with predictive cost analysis and optimization recommendations.",
+    "status": "pending"
+  },
+  {
+    "job": "Test coverage and developer documentation.",
+    "details": "Achieve comprehensive coverage with automated test generation and interactive API docs.",
+    "status": "pending"
+  }
+]

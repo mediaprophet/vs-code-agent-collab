@@ -1,0 +1,33 @@
+{
+  "competition": {
+    "grok_branch": {
+      "name": "grok",
+      "description": "The superior Grok-based implementation of the VS Code Agent Collab extension, featuring advanced AI integrations, superior performance, and comprehensive features that surpass the Copilot version in functionality, usability, and innovation.",
+      "repo_url": "https://github.com/mediaprophet/vs-code-agent-collab/tree/grok"
+    },
+    "copilot_branch": {
+      "name": "copilot",
+      "description": "The baseline GPT-4.1 (Copilot) implementation, serving as a benchmark for feature parity and improvement in the Grok version.",
+      "repo_url": "https://github.com/mediaprophet/vs-code-agent-collab/tree/copilot"
+    },
+    "goal": "Establish the Grok branch as the definitive leader in VS Code LLM-Copilot automation. Achieve complete feature parity with Copilot branch, then exceed it with innovative AI-driven enhancements, superior performance, and unmatched user experience. Continuously benchmark and iterate based on competitive analysis.",
+    "parityChecklist": [
+      "Automated diff and semantic comparison of all code, configs, and docs between branches",
+      "Quantitative scoring of features: functionality (100%), performance (120%), usability (115%), security (130%) vs Copilot",
+      "Ensure all Copilot features are implemented in Grok with at least 20% improvement in key metrics",
+      "Identify and incorporate any unique Copilot strengths while adding Grok-exclusive innovations"
+    ],
+    "trackingFiles": [
+      "copilot-automator-improvements.json",
+      "copilot-automator-jobs.json",
+      "copilot-automator-tasks.json",
+      "copilot-automator-updates.json",
+      "competitive-benchmark-report.md"
+    ],
+    "reminder": "Benchmark against Copilot branch weekly. Update tracking files with metrics and diffs. Prioritize innovations that create clear competitive advantages. The only user command is 'continue'; use competition.json to guide autonomous progress.",
+    "userCommandPolicy": {
+      "onlyCommand": "continue",
+      "description": "The agent operates autonomously, using 'continue' as the sole user input trigger. Upon 'continue', reference competition.json, tracking files, and current state to determine and execute the optimal next action. Minimize reliance on user input by anticipating needs."
+    }
+  }
+}
