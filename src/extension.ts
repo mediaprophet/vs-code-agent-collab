@@ -239,7 +239,7 @@ class HistoryProvider implements vscode.TreeDataProvider<HistoryItem> {
     add(item: HistoryItem) {
         this.history.unshift(item);
         if (this.history.length > 50) this.history.pop();
-        this._onDidChangeTreeData.fire();
+        this._onDidChangeTreeData.fire(undefined);
     }
 
     getTreeItem(element: HistoryItem): vscode.TreeItem {
@@ -305,7 +305,7 @@ class LLMModelsProvider implements vscode.TreeDataProvider<LLMModelItem> {
         this.selectedModel = model;
         await this.context.globalState.update('llmModel', model);
         LLM_MODEL = model;
-        this._onDidChangeTreeData.fire();
+        this._onDidChangeTreeData.fire(undefined);
         vscode.window.showInformationMessage(`Selected LLM model: ${model}`);
     }
 
