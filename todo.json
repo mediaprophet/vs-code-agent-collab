@@ -1,0 +1,8 @@
+[
+  {
+    "file": "src/components/automatorChatParticipant.ts",
+    "line": 81,
+    "todo": "Send prompt to LM Studio SDK and stream the real response",
+    "implemented": false
+  }
+]

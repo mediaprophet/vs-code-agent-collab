@@ -6,7 +6,7 @@
   "name": "copilot-automator-grok-gpt",
   "displayName": "Copilot Automator GROK + GPT Build",
   "description": "An extension to automate interactions with GitHub Copilot using a local LLM.",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "publisher": "mediaprophet",
   "engines": {
     "vscode": "^1.94.0"
@@ -77,6 +77,22 @@
       {
         "command": "copilot-automator.selectModel",
         "title": "Copilot Automator: Select LLM Model"
+      },
+      {
+        "command": "copilot-automator.exportHistory",
+        "title": "Copilot Automator: Export History"
+      },
+      {
+        "command": "copilot-automator.importHistory",
+        "title": "Copilot Automator: Import History"
+      },
+      {
+        "command": "copilot-automator.filterHistory",
+        "title": "Copilot Automator: Filter History"
+      },
+      {
+        "command": "copilot-automator.clearHistoryFilter",
+        "title": "Copilot Automator: Clear History Filter"
       }
     ],
     "viewsContainers": {

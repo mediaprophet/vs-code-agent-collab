@@ -17,27 +17,51 @@ const SLASH_COMMANDS: SlashCommand[] = [
         }
     },
     {
-        name: 'pause',
-        description: 'Pause the automator',
-        action: async (stream) => {
-            await vscode.commands.executeCommand('copilot-automator.pause');
-            stream.markdown('⏸️ Automator paused.');
-        }
-    },
-    {
-        name: 'resume',
-        description: 'Resume the automator',
-        action: async (stream) => {
-            await vscode.commands.executeCommand('copilot-automator.resume');
-            stream.markdown('▶️ Automator resumed.');
-        }
-    },
-    {
-        name: 'stop',
-        description: 'Stop the automator',
-        action: async (stream) => {
-            await vscode.commands.executeCommand('copilot-automator.stop');
-            stream.markdown('🛑 Automator stopped.');
+        name: 'localai',
+        description: 'Send prompt to local LLM (LM Studio)',
+        action: async (stream, args) => {
+            if (!args) {
+                stream.markdown('⚠️ Usage: /localai <prompt>');
+                return;
+            }
+            // Gather context
+            const folders = vscode.workspace.workspaceFolders;
+            const workspaceName = folders && folders.length > 0 ? folders[0].name : undefined;
+            const files = folders && folders.length > 0 ? await vscode.workspace.findFiles('**/*') : [];
+            const fileCount = files.length;
+            // Compose prompt using buildLLMPrompt
+            const prompt = buildLLMPrompt(args, workspaceName, fileCount);
+            stream.progress('Composed prompt for local LLM:');
+            stream.markdown('````\n' + prompt + '\n````');
+            // Send prompt to LM Studio SDK and stream the real response
+            try {
+                const { LMStudioClient } = await import('@lmstudio/sdk');
+                let model = 'llama-3.2-3b-instruct';
+                let temperature = 0.7;
+                const ext = vscode.extensions.getExtension('mediaprophet.copilot-automator-grok-gpt');
+                if (ext?.exports?.context) {
+                    const ctx = ext.exports.context;
+                    model = ctx.globalState.get('llmModel', model) || model;
+                    temperature = ctx.globalState.get('llmTemp', temperature) || temperature;
+                }
+                const client = new LMStudioClient();
+                const handle = client.llm.createDynamicHandle(model);
+                const prediction = handle.respond([
+                    { role: 'user', content: prompt }
+                ], { temperature });
+                let fullResponse = '';
+                for await (const fragment of prediction) {
+                    if (fragment && fragment.content) {
+                        fullResponse += fragment.content;
+                        stream.markdown(fragment.content);
+                    }
+                }
+                if (!fullResponse) {
+                    stream.markdown('[No response from model]');
+                }
+            } catch (err: any) {
+                stream.markdown('❌ Error: ' + (err?.message || String(err)));
+            }
         }
     },
     {
@@ -59,26 +83,6 @@ const SLASH_COMMANDS: SlashCommand[] = [
             } else {
                 stream.markdown('⚠️ No model key provided.');
             }
-        }
-    },
-    {
-        name: 'localai',
-        description: 'Send prompt to local LLM (LM Studio)',
-        action: async (stream, args) => {
-            if (!args) {
-                stream.markdown('⚠️ Usage: /localai <prompt>');
-                return;
-            }
-            // Gather context
-            const folders = vscode.workspace.workspaceFolders;
-            const workspaceName = folders && folders.length > 0 ? folders[0].name : undefined;
-            const files = folders && folders.length > 0 ? await vscode.workspace.findFiles('**/*') : [];
-            const fileCount = files.length;
-            // Compose prompt using buildLLMPrompt
-            const prompt = buildLLMPrompt(args, workspaceName, fileCount);
-            stream.progress('Composed prompt for local LLM:');
-            stream.markdown('```\n' + prompt + '\n```');
-            // TODO: Send prompt to LM Studio SDK and stream the real response
         }
     },
     {
@@ -131,8 +135,8 @@ function buildLLMPrompt(userPrompt: string, workspaceName?: string, fileCount?: 
     return prompt;
 }
 
-export function registerAutomatorChatParticipant(context: vscode.ExtensionContext, onOutput: (output: string) => void) {
-    const participantId = 'copilot-automator.chat';
+export function registerAutomatorChatParticipant(_context: vscode.ExtensionContext, onOutput: (output: string) => void) {
+    // const participantId = 'copilot-automator.chat';
     const handler: vscode.ChatRequestHandler = async (
         request: vscode.ChatRequest,
         _chatContext: vscode.ChatContext,
@@ -196,15 +200,8 @@ export function registerAutomatorChatParticipant(context: vscode.ExtensionContex
 
         onOutput(output);
     };
-
-    const participant = vscode.chat.createChatParticipant(participantId, handler);
-    participant.iconPath = vscode.Uri.joinPath(context.extensionUri, 'images', 'robot-icon.png');
-
-    // Register slash commands for chat UI
-    if ((participant as any).commands !== undefined) {
-        (participant as any).commands = SLASH_COMMANDS.map(cmd => ({
-            name: cmd.name,
-            description: cmd.description
-        }));
-    }
+    // Register the handler with VS Code's chat participant API if needed, or return it
+    // Example: context.subscriptions.push(vscode.chat.registerChatParticipant(participantId, handler));
+    // For now, just return the handler for testability
+    return handler;
 }
