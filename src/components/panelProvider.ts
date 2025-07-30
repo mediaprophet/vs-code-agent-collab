@@ -1,13 +1,21 @@
+
 import * as vscode from 'vscode';
+import { AutomatorPanelBridge } from './automatorPanelBridge';
 
 export class AutomatorPanelProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'copilotAutomatorPanel';
 
     constructor(private readonly _extensionUri: vscode.Uri) {}
 
+
     resolveWebviewView(webviewView: vscode.WebviewView, _context: vscode.WebviewViewResolveContext, _token: vscode.CancellationToken) {
         webviewView.webview.options = { enableScripts: true, localResourceRoots: [this._extensionUri] };
         webviewView.webview.html = this.getHtmlForWebview();
+        // Register this webview with the AutomatorPanelBridge singleton
+        AutomatorPanelBridge.getInstance().setWebviewView(webviewView);
+        webviewView.onDidDispose(() => {
+            AutomatorPanelBridge.getInstance().clear();
+        });
     }
 
     private getHtmlForWebview(): string {

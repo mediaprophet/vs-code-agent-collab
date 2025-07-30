@@ -6,7 +6,7 @@
   "name": "copilot-automator-grok-gpt",
   "displayName": "Copilot Automator GROK + GPT Build",
   "description": "An extension to automate interactions with GitHub Copilot using a local LLM.",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "publisher": "mediaprophet",
   "engines": {
     "vscode": "^1.94.0"
@@ -139,6 +139,12 @@
       "onCommand:copilot-automator.openLogViewer",
       "onCommand:copilot-automator.refreshModels",
       "onCommand:copilot-automator.selectModel"
+    ],
+     "chatParticipants": [
+      {
+        "id": "copilot-automator.chat",
+        "name": "Copilot-Automator-Chat"
+      }
     ]
   },
   "scripts": {
@@ -159,7 +165,9 @@
     "typescript": "^5.6.2"
   },
   "dependencies": {
-    "axios": "^1.7.7",
+    "@lmstudio/sdk": "^1.4.0",
+    "@vscode/prompt-tsx": "^0.4.0-alpha.5",
+    "axios": "^1.11.0",
     "glob": "^11.0.0"
   }
 }

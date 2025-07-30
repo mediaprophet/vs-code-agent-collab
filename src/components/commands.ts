@@ -5,6 +5,7 @@ import * as path from 'path';
 import * as glob from 'glob';
 import { HistoryProvider, addPromptHistory, getPromptHistory, logInteraction, HistoryItem } from './history';
 import { getLastCopilotChatResponse as mappedGetLastCopilotChatResponse, sendPromptToChat as mappedSendPromptToChat, resolveUITextAreaMapping } from '../commands';
+import { AutomatorPanelBridge } from './automatorPanelBridge';
 
 const logFilePath = path.join(__dirname, '../../copilot_interactions.log');
 
@@ -27,7 +28,7 @@ export let agentCooperationGoal: string | undefined;
 export let agentCooperationLoop: NodeJS.Timeout | undefined;
 export let selectedFiles: string[] = [];
 export let LLM_API_URL = 'http://localhost:1234/v1/chat/completions';
-export let LLM_MODEL = 'your-model-name';
+export let LLM_MODEL = 'llama-3.2-3b-instruct'; // Default, but always use globalState at runtime
 export let LLM_TEMPERATURE = 0.7;
 export let CONTEXT_SOURCE = 'editor';
 export let FILE_REVIEW_PATHS = '';
@@ -393,10 +394,19 @@ export async function fetchSpecResources(): Promise<string> {
 
 export async function generatePromptFromLocalLLM(contextualInfo: string, fileContents: string, specContents: string, isRetry: boolean = false): Promise<string> {
     try {
+        // Always get the latest model from globalState (if available)
+        let model = LLM_MODEL;
+        try {
+            const ext = vscode.extensions.getExtension('mediaprophet.vs-code-agent-collab');
+            const context = ext?.exports?.extensionContext as vscode.ExtensionContext | undefined;
+            if (context) {
+                model = context.globalState.get('llmModel', LLM_MODEL);
+            }
+        } catch {}
         const history = getPromptHistory(5);
         const historyContext = history.length > 0 ? `\n\nRecent Prompt History:\n${history.map(h => `Prompt: ${h.prompt}\nResponse: ${h.response || 'None'}`).join('\n')}` : '';
         const payload = {
-            model: LLM_MODEL,
+            model,
             messages: [
                 {
                     role: 'system',
@@ -407,11 +417,13 @@ export async function generatePromptFromLocalLLM(contextualInfo: string, fileCon
                     content: `${contextualInfo}\n\nFiles for review:\n${fileContents}\n\nSpecification Resources:\n${specContents}${historyContext}${isRetry ? '\n\nPrevious attempt failed. Review specifications and try again.' : ''}`
                 }
             ],
-            temperature: LLM_TEMPERATURE
+            temperature: LLM_TEMPERATURE,
+            max_tokens: -1,
+            stream: false
         };
         const response = await axios.post(LLM_API_URL, payload);
         let content = response.data.choices?.[0]?.message?.content || '';
-    logInteraction(LOG_LEVEL_INFO, 'LOCAL_LLM_REQUEST', { request: payload, response: content }, logFilePath);
+        logInteraction(LOG_LEVEL_INFO, 'LOCAL_LLM_REQUEST', { request: payload, response: content }, logFilePath);
         const match = content.match(/<copilot_instructions>([\s\S]*?)<\/copilot_instructions>/);
         if (match && match[1]) {
             content = match[1].trim();
@@ -424,7 +436,7 @@ export async function generatePromptFromLocalLLM(contextualInfo: string, fileCon
         return content;
     } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : String(err);
-    logInteraction(LOG_LEVEL_ERROR, 'LOCAL_LLM_REQUEST', errorMessage, logFilePath);
+        logInteraction(LOG_LEVEL_ERROR, 'LOCAL_LLM_REQUEST', errorMessage, logFilePath);
         vscode.window.showErrorMessage(`LLM request failed: ${errorMessage}`);
         return '';
     }
@@ -475,6 +487,7 @@ export async function sendPromptToChat(promptText: string, historyProvider: Hist
     logInteraction(LOG_LEVEL_INFO, 'PROMPT_SENT', promptText, logFilePath);
     historyProvider.add(new HistoryItem('Prompt Sent', promptText.substring(0, 50)));
     vscode.window.showInformationMessage('Prompt sent to Copilot.');
+    AutomatorPanelBridge.getInstance().sendDialogue('Prompt sent to Copilot: ' + promptText);
 }
 
 export async function acceptCopilotSuggestion() {
@@ -506,12 +519,15 @@ export async function agentCooperationMain(goal: string, historyProvider: Histor
         const specContents = await fetchSpecResources();
         if (lastResponse.includes('No active editor') || lastResponse.includes('not available')) {
             historyProvider.add(new HistoryItem('Warning', 'No editor context available for prompt generation.'));
+            AutomatorPanelBridge.getInstance().sendDialogue('Warning: No editor context available for prompt generation.');
         }
         if (fileContents === 'No file content available for review.') {
             historyProvider.add(new HistoryItem('Warning', 'No files selected or matched for LLM review.'));
+            AutomatorPanelBridge.getInstance().sendDialogue('Warning: No files selected or matched for LLM review.');
         }
         if (specContents === 'No specification resource content available.') {
             historyProvider.add(new HistoryItem('Warning', 'No specification resources available.'));
+            AutomatorPanelBridge.getInstance().sendDialogue('Warning: No specification resources available.');
         }
         const contextualInfo = lastResponse.includes('No active editor') || lastResponse.includes('not available')
             ? `Current goal: ${goal}. No prior response available.`
@@ -519,15 +535,18 @@ export async function agentCooperationMain(goal: string, historyProvider: Histor
         let nextPrompt = await generatePromptFromLocalLLM(contextualInfo, fileContents, specContents);
         if (!nextPrompt) {
             historyProvider.add(new HistoryItem('Warning', 'Failed to generate prompt, retrying with specifications.'));
+            AutomatorPanelBridge.getInstance().sendDialogue('Warning: Failed to generate prompt, retrying with specifications.');
             nextPrompt = await generatePromptFromLocalLLM(contextualInfo, fileContents, specContents, true);
         }
         if (nextPrompt) {
+            AutomatorPanelBridge.getInstance().sendDialogue('LLM: ' + nextPrompt);
             await sendPromptToChat(nextPrompt, historyProvider);
             await acceptCopilotSuggestion();
         } else {
             historyProvider.add(new HistoryItem('Error', 'Failed to generate next prompt.'));
             logInteraction(LOG_LEVEL_ERROR, 'PROMPT_GENERATION_FAILED', 'No prompt returned from LLM.', logFilePath);
             vscode.window.showErrorMessage('Failed to generate next prompt.');
+            AutomatorPanelBridge.getInstance().sendDialogue('Error: Failed to generate next prompt.');
         }
         await new Promise(resolve => setTimeout(resolve, 1000));
     }

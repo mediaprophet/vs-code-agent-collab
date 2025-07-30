@@ -1,14 +1,17 @@
 # Exclude dev dependencies, configs, and unnecessary files from VSIX package
 .git*
 .vscode/
-node_modules/
+node_modules/*
+!node_modules/axios/**
+!node_modules/@lmstudio/**
+!node_modules/@vscode/**
 *.map
 *.ts
 *.tsx
 src/
 test/
 coverage/
-images/
+# images/
 Grok_Competition_Files/
 README.md
 LICENSE
@@ -19,11 +22,3 @@ LICENSE
 !package.json
 !out/**
 !dist/**
-
-# Exclude build tools and configs
-webpack.config.js
-esbuild.config.js
-tsconfig.json
-
-# Exclude VSCE and packaging artifacts
-*.vsix

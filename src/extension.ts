@@ -26,7 +26,14 @@ import { CommandsProvider } from './components/commandsProvider';
 import { HistoryProvider, logInteraction, LOG_LEVEL_INFO, LOG_LEVEL_ERROR, HistoryItem } from './components/history';
 import { LLMModelsProvider } from './components/llmModels';
 import { AutomatorPanelProvider } from './components/panelProvider';
+import { AutomatorPanelBridge } from './components/automatorPanelBridge';
 import { LocalChatPanelProvider } from './components/localChatPanelProvider';
+// Helper to send output to Automator panel dialogue log
+function sendToAutomatorPanel(text: string) {
+    AutomatorPanelBridge.getInstance().sendDialogue(text);
+}
+
+import { registerAutomatorChatParticipant } from './components/automatorChatParticipant';
 
 
 
@@ -313,6 +320,11 @@ export function activate(context: vscode.ExtensionContext) {
     agentCooperationPaused = context.globalState.get('agentCooperationPaused', false);
     agentCooperationGoal = context.globalState.get('agentCooperationGoal', undefined);
     logFilePath = path.join(context.extensionPath, 'copilot_interactions.log');
+
+    // Register Copilot Automator chat participant and export output to Automator panel
+    registerAutomatorChatParticipant(context, (output: string) => {
+        sendToAutomatorPanel(output);
+    });
     loadUITextAreaMappings(context);
 
     const historyProvider = new HistoryProvider();
@@ -328,14 +340,22 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.window.registerWebviewViewProvider(AutomatorPanelProvider.viewType, provider));
 
     // Register Local Chat Panel
-    const localChatProvider = new LocalChatPanelProvider();
-    context.subscriptions.push(vscode.window.registerWebviewViewProvider(LocalChatPanelProvider.viewType, localChatProvider));
+    const localChatPanelProviderInstance = new LocalChatPanelProvider(context);
+    context.subscriptions.push(vscode.window.registerWebviewViewProvider(LocalChatPanelProvider.viewType, localChatPanelProviderInstance));
+
+    // Command to refresh the local chat panel (for model changes)
+    context.subscriptions.push(
+        vscode.commands.registerCommand('copilot-automator.refreshLocalChatPanel', () => {
+            localChatPanelProviderInstance.refreshHtml();
+        })
+    );
 
     // Register commands
     context.subscriptions.push(
         vscode.commands.registerCommand('copilot-automator.mapUITextArea', () => {
             mapUITextArea(context);
             historyProvider.add(new HistoryItem('Mapped UI Text Area', 'User mapped a text area'));
+            sendToAutomatorPanel('System: UI Text Area mapped.');
         }),
         vscode.commands.registerCommand('copilot-automator.openLocalChat', () => {
             vscode.commands.executeCommand('workbench.view.extension.copilotAutomatorActivityBar');
@@ -343,6 +363,7 @@ export function activate(context: vscode.ExtensionContext) {
         }),
         vscode.commands.registerCommand('copilot-automator.runCommand', async (cmd: string) => {
             historyProvider.add(new HistoryItem(`Command: ${cmd}`, 'Clicked in Available Commands'));
+            sendToAutomatorPanel('User: ' + cmd);
             switch (cmd) {
                 case 'start':
                     await vscode.commands.executeCommand('copilot-automator.start');
@@ -361,7 +382,10 @@ export function activate(context: vscode.ExtensionContext) {
                     break;
                 case 'sendPrompt':
                     const prompt = await vscode.window.showInputBox({ prompt: 'Enter prompt to send to Copilot Chat:' });
-                    if (prompt) await sendPromptToChat(prompt, historyProvider);
+                    if (prompt) {
+                        await sendPromptToChat(prompt, historyProvider);
+                        sendToAutomatorPanel('User: ' + prompt);
+                    }
                     break;
                 case 'acceptSuggestion':
                     await acceptCopilotSuggestion();
@@ -371,15 +395,18 @@ export function activate(context: vscode.ExtensionContext) {
                     if (logMsg) {
                         logInteraction(LOG_LEVEL_INFO, 'USER_LOG', logMsg, logFilePath);
                         vscode.window.showInformationMessage('Log entry added.');
+                        sendToAutomatorPanel('System: Log entry added.');
                     }
                     break;
                 default:
                     vscode.window.showWarningMessage(`No action implemented for command: ${cmd}`);
+                    sendToAutomatorPanel('System: No action implemented for command: ' + cmd);
             }
         }),
         vscode.commands.registerCommand('copilot-automator.start', async () => {
             if (agentCooperationActive) {
                 vscode.window.showInformationMessage('Copilot Automator is already running.');
+                sendToAutomatorPanel('System: Copilot Automator is already running.');
                 return;
             }
             agentCooperationActive = true;
@@ -387,6 +414,7 @@ export function activate(context: vscode.ExtensionContext) {
             const goal = await vscode.window.showInputBox({ prompt: 'What is your cooperation goal for Copilot?' });
             if (!goal) {
                 vscode.window.showWarningMessage('No goal provided. Cooperation cancelled.');
+                sendToAutomatorPanel('System: No goal provided. Cooperation cancelled.');
                 agentCooperationActive = false;
                 return;
             }
@@ -394,6 +422,7 @@ export function activate(context: vscode.ExtensionContext) {
             await context.globalState.update('agentCooperationGoal', goal);
             await context.globalState.update('agentCooperationPaused', false);
             logInteraction(LOG_LEVEL_INFO, 'AGENT_COOPERATION_STARTED', goal, logFilePath);
+            sendToAutomatorPanel('System: Agent cooperation started. Goal: ' + goal);
             historyProvider.add(new HistoryItem('Cooperation started', goal));
             if (agentCooperationGoal) {
                 agentCooperationLoop = setTimeout(() => agentCooperationMain(agentCooperationGoal as string, historyProvider), 0);
@@ -404,6 +433,7 @@ export function activate(context: vscode.ExtensionContext) {
                 agentCooperationPaused = true;
                 await context.globalState.update('agentCooperationPaused', true);
                 vscode.window.showInformationMessage('Copilot Automator paused.');
+                sendToAutomatorPanel('System: Copilot Automator paused.');
                 logInteraction(LOG_LEVEL_INFO, 'AGENT_COOPERATION_PAUSED', 'Paused by user.', logFilePath);
                 historyProvider.add(new HistoryItem('Cooperation paused', 'Paused by user'));
             }
@@ -413,6 +443,7 @@ export function activate(context: vscode.ExtensionContext) {
                 agentCooperationPaused = false;
                 await context.globalState.update('agentCooperationPaused', false);
                 vscode.window.showInformationMessage('Copilot Automator resumed.');
+                sendToAutomatorPanel('System: Copilot Automator resumed.');
                 logInteraction(LOG_LEVEL_INFO, 'AGENT_COOPERATION_RESUMED', 'Resumed by user.', logFilePath);
                 historyProvider.add(new HistoryItem('Cooperation resumed', 'Resumed by user'));
                 if (agentCooperationGoal) {
@@ -433,6 +464,7 @@ export function activate(context: vscode.ExtensionContext) {
             logInteraction(LOG_LEVEL_INFO, 'AGENT_COOPERATION_STOPPED', 'Cooperation stopped by user.', logFilePath);
             historyProvider.add(new HistoryItem('Cooperation stopped', 'Stopped by user'));
             vscode.window.showInformationMessage('Copilot Automator stopped.');
+            sendToAutomatorPanel('System: Copilot Automator stopped.');
         }),
         vscode.commands.registerCommand('copilot-automator.openSettings', () => {
             openSettingsPanel(context);
@@ -462,8 +494,27 @@ export function activate(context: vscode.ExtensionContext) {
             openLogViewerPanel();
         }),
         vscode.commands.registerCommand('copilot-automator.refreshModels', () => modelsProvider.refresh()),
+        vscode.commands.registerCommand('copilot-automator.load', async () => {
+            const modelKey = await vscode.window.showInputBox({ prompt: 'Enter model key to load:' });
+            if (modelKey) {
+                const lmstudioManager = await import('./components/lmstudioManager');
+                await lmstudioManager.loadModel(modelKey);
+                vscode.window.showInformationMessage(`Model loaded: ${modelKey}`);
+                await modelsProvider.refresh();
+            }
+        }),
+        vscode.commands.registerCommand('copilot-automator.unload', async () => {
+            const modelKey = await vscode.window.showInputBox({ prompt: 'Enter model key to unload:' });
+            if (modelKey) {
+                const lmstudioManager = await import('./components/lmstudioManager');
+                await lmstudioManager.unloadModel(modelKey);
+                vscode.window.showInformationMessage(`Model unloaded: ${modelKey}`);
+                await modelsProvider.refresh();
+            }
+        }),
         vscode.commands.registerCommand('copilot-automator.selectModel', async (model: string) => {
             await modelsProvider.selectModel(model);
+            vscode.commands.executeCommand('copilot-automator.refreshLocalChatPanel');
         })
     );
 

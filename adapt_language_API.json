@@ -1,0 +1,79 @@
+{
+  "title": "Comprehensive Plan to Integrate VS Code Language Model API into Copilot Automator Extension",
+  "objectives": [
+    "Leverage the VS Code Language Model API to provide native, extensible AI features.",
+    "Expose local and remote LLMs as endpoints for chat, completions, and code actions.",
+    "Ensure compatibility with VS Code's AI UX, privacy, and security standards."
+  ],
+  "phases": [
+    {
+      "phase": 1,
+      "name": "Research & Preparation",
+      "steps": [
+        "Review the official Language Model API documentation.",
+        "Audit current extension architecture for chat, LLM, and prompt handling.",
+        "Identify all places where LLMs are used or could be enhanced."
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Register LLM Endpoint(s)",
+      "steps": [
+        "Implement a VS Code language model endpoint for LM Studio (local) and/or remote LLMs.",
+        "Expose endpoint(s) using the API so they are available to VS Code and other extensions.",
+        "Test endpoint registration and ensure discoverability."
+      ]
+    },
+    {
+      "phase": 3,
+      "name": "Native Chat Participant Integration",
+      "steps": [
+        "Refactor Automator chat participant to use the Language Model API for prompt/response.",
+        "Support streaming, context, and markdown formatting in chat.",
+        "Enable slash commands and context-aware prompts using the API."
+      ]
+    },
+    {
+      "phase": 4,
+      "name": "AI-Powered Code Completions & Actions",
+      "steps": [
+        "Implement inline code completions using the registered LLM endpoint.",
+        "Add AI-powered code actions (e.g., explain, refactor, generate tests) via the API.",
+        "Integrate with VS Code's command palette and editor context menus."
+      ]
+    },
+    {
+      "phase": 5,
+      "name": "Context Sharing & Extension Interop",
+      "steps": [
+        "Allow other extensions to use the registered LLM endpoint.",
+        "Document the endpoint and provide usage examples for extension authors.",
+        "Test interoperability and context sharing scenarios."
+      ]
+    },
+    {
+      "phase": 6,
+      "name": "UX, Privacy, and Security Compliance",
+      "steps": [
+        "Review and implement VS Code's AI UX guidelines.",
+        "Ensure user data and prompts are handled securely and with privacy in mind.",
+        "Add settings for endpoint selection, data sharing, and opt-in/opt-out."
+      ]
+    },
+    {
+      "phase": 7,
+      "name": "Testing, Documentation, and Release",
+      "steps": [
+        "Write unit and integration tests for all new features.",
+        "Update extension documentation to cover new AI capabilities and APIs.",
+        "Release updated extension and gather user feedback."
+      ]
+    }
+  ],
+  "deliverables": [
+    "Registered LLM endpoint(s) accessible via the Language Model API.",
+    "Native chat participant and code completions powered by the API.",
+    "Documentation for users and extension authors.",
+    "Settings for endpoint management and privacy."
+  ]
+}

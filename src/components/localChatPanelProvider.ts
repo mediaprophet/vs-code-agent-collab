@@ -4,17 +4,19 @@ import { generatePromptFromLocalLLM } from './commands';
 export class LocalChatPanelProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'copilotAutomatorLocalChat';
 
-    constructor() {}
+    private webviewView?: vscode.WebviewView;
+    constructor(private context?: vscode.ExtensionContext) {}
 
     resolveWebviewView(
         webviewView: vscode.WebviewView,
-    _context: vscode.WebviewViewResolveContext<unknown>,
-    _token: vscode.CancellationToken
+        _context: vscode.WebviewViewResolveContext<unknown>,
+        _token: vscode.CancellationToken
     ): void {
+        this.webviewView = webviewView;
         webviewView.webview.options = {
             enableScripts: true,
         };
-        webviewView.webview.html = this.getHtml();
+        this.refreshHtml();
         webviewView.webview.onDidReceiveMessage(async (msg) => {
             if (msg.command === 'sendPrompt') {
                 const prompt = msg.prompt;
@@ -29,7 +31,18 @@ export class LocalChatPanelProvider implements vscode.WebviewViewProvider {
         });
     }
 
-    private getHtml(): string {
+    public refreshHtml() {
+        if (!this.webviewView) return;
+        let selectedModel = 'select model';
+        try {
+            if (this.context) {
+                selectedModel = this.context.globalState.get('llmModel', 'select model') || 'select model';
+            }
+        } catch {}
+        this.webviewView.webview.html = this.getHtml(selectedModel);
+    }
+
+    private getHtml(selectedModel: string): string {
         // Use double curly braces to escape template literals in embedded JS
         return `<!DOCTYPE html>
 <html lang="en">
@@ -41,6 +54,7 @@ export class LocalChatPanelProvider implements vscode.WebviewViewProvider {
 </head>
 <body class="bg-gray-50 font-sans p-4">
     <h2 class="text-xl font-bold mb-2 text-blue-700">Chat with Local Model</h2>
+    <div class="mb-2 text-sm text-gray-600">Model: <span class="font-semibold">${selectedModel}</span></div>
     <div id="chat" class="bg-white border border-gray-300 rounded p-2 h-80 overflow-y-auto text-sm mb-2"></div>
     <form id="chatForm" class="flex gap-2">
         <input id="prompt" type="text" class="flex-1 border rounded px-2 py-1" placeholder="Type your prompt..." autocomplete="off" />
