@@ -4,36 +4,36 @@
       "phase": 1,
       "title": "UI Mapping Command",
       "tasks": [
-  "Implement copilot-automator.mapUITextArea command to allow users to select and map input/output areas. (done)",
-  "Store mappings (URI, type, description) in globalState for persistence. (done)",
-  "Prompt user for classification and optional description. (done)"
+      "Implement copilot-automator.mapUITextArea command to allow users to select and map input/output areas.",
+      "Store mappings (URI, type, description) in globalState for persistence.",
+      "Prompt user for classification and optional description."
       ]
     },
     {
       "phase": 2,
       "title": "Automation Integration",
       "tasks": [
-  "Update automation logic to use mapped input/output areas for sending prompts and reading responses. (done)",
-  "Modify getLastCopilotChatResponse and sendPromptToChat to leverage mappings. (done)",
-  "Log mapping and automation actions for traceability. (done)"
+      "Update automation logic to use mapped input/output areas for sending prompts and reading responses.",
+      "Modify getLastCopilotChatResponse and sendPromptToChat to leverage mappings.",
+      "Log mapping and automation actions for traceability."
       ]
     },
     {
       "phase": 3,
       "title": "UI/UX Enhancements",
       "tasks": [
-  "Add a webview button and history tree item to trigger the mapping command. (done)",
-  "Provide user feedback and error handling for mapping actions. (done)",
-  "Validate mapped areas and warn if inaccessible or stale. (done)"
+      "Add a webview button and history tree item to trigger the mapping command.",
+      "Provide user feedback and error handling for mapping actions.",
+      "Validate mapped areas and warn if inaccessible or stale."
       ]
     },
     {
       "phase": 4,
       "title": "Mapping Management & Settings",
       "tasks": [
-  "Implement a settings or management panel to view, edit, or remove mappings. (done)",
-  "Allow users to update or remap areas as needed. (done)",
-  "Support exporting/importing mappings for workflow reproducibility. (done)"
+      "Implement a settings or management panel to view, edit, or remove mappings.",
+      "Allow users to update or remap areas as needed.",
+      "Support exporting/importing mappings for workflow reproducibility."
       ]
     },
     {

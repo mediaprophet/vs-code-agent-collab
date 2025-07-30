@@ -46,7 +46,8 @@ export class HistoryProvider implements vscode.TreeDataProvider<HistoryItem> {
         new HistoryItem('📝 Create Instruction Template', '', { command: 'copilot-automator.createTemplateInstruction', title: 'Create Instruction Template' }),
         new HistoryItem('✅ Validate Instructions', '', { command: 'copilot-automator.validateInstructions', title: 'Validate Instructions' }),
         new HistoryItem('🚀 Run Instruction File', '', { command: 'copilot-automator.runInstructionFile', title: 'Run Instruction File' }),
-        new HistoryItem('📜 View Logs', '', { command: 'copilot-automator.openLogViewer', title: 'View Logs' })
+    new HistoryItem('📜 View Logs', '', { command: 'copilot-automator.openLogViewer', title: 'View Logs' }),
+    new HistoryItem('🖌️ Map UI Text Area', '', { command: 'copilot-automator.mapUITextArea', title: 'Map UI Text Area' })
     ];
 
     add(item: HistoryItem) {

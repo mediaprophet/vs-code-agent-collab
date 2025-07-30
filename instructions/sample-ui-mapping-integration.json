@@ -1,0 +1,19 @@
+{
+  "description": "Sample automation using mapped UI areas for Copilot Chat integration.",
+  "steps": [
+    {
+      "action": "sendPrompt",
+      "prompt": "Hello, Copilot!",
+      "target": "input",
+      "storeAs": "greetingPrompt"
+    },
+    {
+      "action": "acceptSuggestion"
+    },
+    {
+      "action": "sendPrompt",
+      "prompt": "continue",
+      "target": "input"
+    }
+  ]
+}

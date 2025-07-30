@@ -1,0 +1,29 @@
+# Exclude dev dependencies, configs, and unnecessary files from VSIX package
+.git*
+.vscode/
+node_modules/
+*.map
+*.ts
+*.tsx
+src/
+test/
+coverage/
+images/
+Grok_Competition_Files/
+README.md
+LICENSE
+*.log
+*.old
+*.md
+*.json
+!package.json
+!out/**
+!dist/**
+
+# Exclude build tools and configs
+webpack.config.js
+esbuild.config.js
+tsconfig.json
+
+# Exclude VSCE and packaging artifacts
+*.vsix

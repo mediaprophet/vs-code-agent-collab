@@ -27,6 +27,11 @@ export class AutomatorPanelProvider implements vscode.WebviewViewProvider {
     <section aria-label="Automation Controls" class="mb-4">
         <h3 class="text-lg font-semibold mb-2 flex items-center"><span class="mr-2">⚡</span>Quick Actions</h3>
         <div id="controls" class="flex flex-wrap gap-2">
+            <button id="mapUITextAreaBtn" title="Map UI text area" aria-label="Map UI Text Area" class="transition bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-teal-400 flex items-center"><span class="mr-1">🖌️</span>Map UI Area</button>
+            <button id="manageMappingsBtn" title="Manage UI mappings" aria-label="Manage UI Mappings" class="transition bg-cyan-700 hover:bg-cyan-800 text-white px-4 py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-cyan-400 flex items-center"><span class="mr-1">🗂️</span>Manage UI Mappings</button>
+            <button id="exportMappingsBtn" title="Export UI mappings" aria-label="Export UI Mappings" class="transition bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-emerald-400 flex items-center"><span class="mr-1">⬇️</span>Export Mappings</button>
+            <button id="importMappingsBtn" title="Import UI mappings" aria-label="Import UI Mappings" class="transition bg-amber-700 hover:bg-amber-800 text-white px-4 py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-amber-400 flex items-center"><span class="mr-1">⬆️</span>Import Mappings</button>
+            <button id="suggestMappingsBtn" title="Suggest Chat Mappings" aria-label="Suggest Chat Mappings" class="transition bg-fuchsia-700 hover:bg-fuchsia-800 text-white px-4 py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-fuchsia-400 flex items-center"><span class="mr-1">🤖</span>Suggest Chat Mappings</button>
             <button id="goBtn" title="Start agent cooperation" aria-label="Go" class="transition bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-green-400 flex items-center"><span class="mr-1">▶️</span>Go</button>
             <button id="pauseBtn" title="Pause agent cooperation" aria-label="Pause" class="transition bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-orange-400 flex items-center"><span class="mr-1">⏸️</span>Pause</button>
             <button id="resumeBtn" title="Resume agent cooperation" aria-label="Resume" class="transition bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded shadow focus:outline-none focus:ring-2 focus:ring-green-400 flex items-center"><span class="mr-1">▶️</span>Resume</button>
@@ -52,6 +57,26 @@ export class AutomatorPanelProvider implements vscode.WebviewViewProvider {
     <script>
         const vscode = acquireVsCodeApi();
         const dialogue = document.getElementById('dialogue');
+        document.getElementById('mapUITextAreaBtn').onclick = () => {
+            vscode.postMessage({ command: 'mapUITextArea' });
+            addDialogue('User: Map UI Text Area');
+        };
+        document.getElementById('manageMappingsBtn').onclick = () => {
+            vscode.postMessage({ command: 'manageUITextAreaMappings' });
+            addDialogue('User: Manage UI Mappings');
+        };
+        document.getElementById('exportMappingsBtn').onclick = () => {
+            vscode.postMessage({ command: 'exportUITextAreaMappings' });
+            addDialogue('User: Export UI Mappings');
+        };
+        document.getElementById('importMappingsBtn').onclick = () => {
+            vscode.postMessage({ command: 'importUITextAreaMappings' });
+            addDialogue('User: Import UI Mappings');
+        };
+        document.getElementById('suggestMappingsBtn').onclick = () => {
+            vscode.postMessage({ command: 'suggestChatMappings' });
+            addDialogue('User: Suggest Chat Mappings');
+        };
         document.getElementById('goBtn').onclick = () => {
             vscode.postMessage({ command: 'start' });
             addDialogue('User: Go');

@@ -1,3 +1,5 @@
+
+
 import * as vscode from 'vscode';
 import * as path from 'path';
 import commandsJson from './copilot-automator-commands.json';
@@ -15,14 +17,18 @@ import {
     sendPromptToChat,
     acceptCopilotSuggestion,
     agentCooperationMain,
-    // CommandsProvider
 } from './components/commands';
+import {
+    mapUITextArea,
+    loadUITextAreaMappings
+} from './commands';
 import { CommandsProvider } from './components/commandsProvider';
-import { HistoryProvider, logInteraction, LOG_LEVEL_INFO, LOG_LEVEL_ERROR } from './components/history';
-import { HistoryItem } from './components/history';
+import { HistoryProvider, logInteraction, LOG_LEVEL_INFO, LOG_LEVEL_ERROR, HistoryItem } from './components/history';
 import { LLMModelsProvider } from './components/llmModels';
 import { AutomatorPanelProvider } from './components/panelProvider';
 import { LocalChatPanelProvider } from './components/localChatPanelProvider';
+
+
 
 // --- State ---
 let logFilePath: string;
@@ -307,6 +313,7 @@ export function activate(context: vscode.ExtensionContext) {
     agentCooperationPaused = context.globalState.get('agentCooperationPaused', false);
     agentCooperationGoal = context.globalState.get('agentCooperationGoal', undefined);
     logFilePath = path.join(context.extensionPath, 'copilot_interactions.log');
+    loadUITextAreaMappings(context);
 
     const historyProvider = new HistoryProvider();
     vscode.window.registerTreeDataProvider('copilotAutomatorHistory', historyProvider);
@@ -326,6 +333,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Register commands
     context.subscriptions.push(
+        vscode.commands.registerCommand('copilot-automator.mapUITextArea', () => {
+            mapUITextArea(context);
+            historyProvider.add(new HistoryItem('Mapped UI Text Area', 'User mapped a text area'));
+        }),
         vscode.commands.registerCommand('copilot-automator.openLocalChat', () => {
             vscode.commands.executeCommand('workbench.view.extension.copilotAutomatorActivityBar');
             vscode.commands.executeCommand('workbench.views.service.openView', LocalChatPanelProvider.viewType);

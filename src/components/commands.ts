@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as glob from 'glob';
 import { HistoryProvider, addPromptHistory, getPromptHistory, logInteraction, HistoryItem } from './history';
+import { getLastCopilotChatResponse as mappedGetLastCopilotChatResponse, sendPromptToChat as mappedSendPromptToChat, resolveUITextAreaMapping } from '../commands';
 
 const logFilePath = path.join(__dirname, '../../copilot_interactions.log');
 
@@ -79,17 +80,31 @@ export async function runAutomationFromInstructionFile(historyProvider: HistoryP
     for (const [i, step] of steps.entries()) {
         try {
             switch (step.action) {
-                case 'sendPrompt':
+                case 'sendPrompt': {
                     if (!step.prompt) throw new Error('Missing prompt in step.');
                     let prompt = step.prompt;
                     for (const key in variables) {
                         prompt = prompt.replace(`{{${key}}}`, variables[key]);
                     }
-                    await sendPromptToChat(prompt, historyProvider);
+                    // Deep integration: use mapping if target is specified
+                    if (step.target) {
+                        const mapping = resolveUITextAreaMapping(step.target);
+                        if (mapping) {
+                            // Optionally, you could pass mapping info to mappedSendPromptToChat
+                            await mappedSendPromptToChat(prompt); // mapping-aware
+                            historyProvider.add(new HistoryItem('Prompt Sent (Mapping)', `Step ${i + 1}: Used mapping for target '${step.target}'`));
+                        } else {
+                            historyProvider.add(new HistoryItem('Mapping Not Found', `Step ${i + 1}: No mapping for target '${step.target}', using fallback`));
+                            await mappedSendPromptToChat(prompt);
+                        }
+                    } else {
+                        await mappedSendPromptToChat(prompt);
+                    }
                     if (step.storeAs) {
                         variables[step.storeAs] = prompt;
                     }
                     break;
+                }
                 case 'acceptSuggestion':
                     await acceptCopilotSuggestion();
                     break;
@@ -415,6 +430,7 @@ export async function generatePromptFromLocalLLM(contextualInfo: string, fileCon
     }
 }
 
+// Deprecated: use mappedSendPromptToChat for mapping support
 export async function sendPromptToChat(promptText: string, historyProvider: HistoryProvider) {
     if (!promptText) {
     logInteraction(LOG_LEVEL_ERROR, 'INVALID_PROMPT', 'Empty prompt provided.', logFilePath);
@@ -453,17 +469,12 @@ export async function sendPromptToChat(promptText: string, historyProvider: Hist
             vscode.window.showErrorMessage(`Failed to reset chat session: ${errorMessage}`);
         }
     }
-    try {
-        await vscode.commands.executeCommand('workbench.action.chat.open', promptText);
-        promptCount++;
+    // Use the mapping-aware function
+    await mappedSendPromptToChat(promptText);
+    promptCount++;
     logInteraction(LOG_LEVEL_INFO, 'PROMPT_SENT', promptText, logFilePath);
-        historyProvider.add(new HistoryItem('Prompt Sent', promptText.substring(0, 50)));
-        vscode.window.showInformationMessage('Prompt sent to Copilot.');
-    } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-    logInteraction(LOG_LEVEL_ERROR, 'PROMPT_SEND_FAILED', errorMessage, logFilePath);
-        vscode.window.showErrorMessage(`Failed to send prompt: ${errorMessage}`);
-    }
+    historyProvider.add(new HistoryItem('Prompt Sent', promptText.substring(0, 50)));
+    vscode.window.showInformationMessage('Prompt sent to Copilot.');
 }
 
 export async function acceptCopilotSuggestion() {
@@ -479,29 +490,9 @@ export async function acceptCopilotSuggestion() {
     }
 }
 
+// Deprecated: use mappedGetLastCopilotChatResponse for mapping support
 export async function getLastCopilotChatResponse(): Promise<string> {
-    if (CONTEXT_SOURCE === 'chat') {
-        const last = getPromptHistory(1)[0];
-        if (last && last.response) {
-            logInteraction(LOG_LEVEL_INFO, 'CONTEXT_SOURCE', 'Using prompt history for chat context.', logFilePath);
-            return last.response;
-        }
-    logInteraction(LOG_LEVEL_INFO, 'CONTEXT_SOURCE', 'Chat context not supported, falling back to editor.', logFilePath);
-        vscode.window.showInformationMessage('Copilot chat context not supported, using editor context.');
-        return 'Copilot chat response not available.';
-    }
-    const editor = vscode.window.activeTextEditor;
-    if (editor) {
-        const document = editor.document;
-        const selection = editor.selection;
-        const selectedText = document.getText(selection);
-        const context = selectedText || document.getText();
-        logInteraction(LOG_LEVEL_INFO, 'CONTEXT_SOURCE', 'Using editor context.', logFilePath);
-        return context || 'No content in active editor.';
-    }
-    logInteraction(LOG_LEVEL_WARNING, 'CONTEXT_SOURCE', 'No active editor found.', logFilePath);
-    vscode.window.showWarningMessage('No active editor found for context.');
-    return 'No active editor context available.';
+    return mappedGetLastCopilotChatResponse();
 }
 
 export async function agentCooperationMain(goal: string, historyProvider: HistoryProvider) {
