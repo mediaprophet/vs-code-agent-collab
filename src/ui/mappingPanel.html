@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UI Text Area Mappings</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    .container { padding: 1.5em; max-width: 600px; margin: auto; }
+    h2 { margin-top: 0; }
+    .mappings-list { margin: 1em 0; }
+    .mapping { padding: 0.5em 0; border-bottom: 1px solid #eee; }
+    .actions { margin-top: 1em; }
+    button { margin-right: 0.5em; }
+    .add-form { display: flex; gap: 0.5em; margin-top: 1em; }
+    .add-form input { flex: 1; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>UI Text Area Mappings</h2>
+    <div class="mappings-list" id="mappingsList"></div>
+    <form class="add-form" id="addMappingForm">
+      <input type="text" id="mappingSource" placeholder="Source" required />
+      <input type="text" id="mappingTarget" placeholder="Target" required />
+      <input type="text" id="mappingDescription" placeholder="Description (optional)" />
+      <button type="submit">Add</button>
+    </form>
+    <div class="actions">
+      <button id="refreshBtn">Refresh</button>
+    </div>
+  </div>
+  <script>
+    const vscode = acquireVsCodeApi();
+    function renderMappings(mappings) {
+      const list = document.getElementById('mappingsList');
+      list.innerHTML = '';
+      if (!mappings.length) {
+        list.innerHTML = '<em>No mappings yet.</em>';
+        return;
+      }
+      mappings.forEach((m) => {
+        const div = document.createElement('div');
+        div.className = 'mapping';
+        div.innerHTML = `<strong>${m.source}</strong> → <strong>${m.target}</strong> <small>${m.description || ''}</small> <button data-id="${m.id}" class="removeBtn">Remove</button>`;
+        list.appendChild(div);
+      });
+    }
+    window.addEventListener('message', event => {
+      const msg = event.data;
+      if (msg.command === 'mappingsList') {
+        renderMappings(msg.mappings);
+      }
+    });
+    document.getElementById('addMappingForm').onsubmit = function(e) {
+      e.preventDefault();
+      const source = document.getElementById('mappingSource').value.trim();
+      const target = document.getElementById('mappingTarget').value.trim();
+      const description = document.getElementById('mappingDescription').value.trim();
+      if (source && target) {
+        vscode.postMessage({ command: 'addMapping', source, target, description });
+        document.getElementById('mappingSource').value = '';
+        document.getElementById('mappingTarget').value = '';
+        document.getElementById('mappingDescription').value = '';
+      }
+    };
+    document.getElementById('refreshBtn').onclick = function() {
+      vscode.postMessage({ command: 'getMappings' });
+    };
+    document.getElementById('mappingsList').onclick = function(e) {
+      if (e.target.classList.contains('removeBtn')) {
+        vscode.postMessage({ command: 'removeMapping', id: e.target.dataset.id });
+      }
+    };
+    // Initial load
+    vscode.postMessage({ command: 'getMappings' });
+  </script>
+</body>
+</html>

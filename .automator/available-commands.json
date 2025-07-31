@@ -1,0 +1,18 @@
+{
+  "commands": [
+    { "command": "start", "description": "Start the agent cooperation loop to automate Copilot interactions." },
+    { "command": "pause", "description": "Pause the agent cooperation loop." },
+    { "command": "resume", "description": "Resume the paused agent cooperation loop." },
+    { "command": "stop", "description": "Stop the agent cooperation loop." },
+    { "command": "openSettings", "description": "Open the settings panel to configure LLM, files, and spec resources." },
+    { "command": "selectFiles", "description": "Select files for LLM review (multi-select, glob, or manual paths)." },
+    { "command": "manageSpecResources", "description": "Manage specification resource URLs." },
+    { "command": "createTemplateInstruction", "description": "Create a template JSON instruction file." },
+    { "command": "validateInstructions", "description": "Validate all JSON instruction files in the instructions folder." },
+    { "command": "runInstructionFile", "description": "Run an automation job from a JSON instruction file." },
+    { "command": "openLogViewer", "description": "Open the log viewer panel to inspect interaction logs." },
+    { "command": "sendPrompt", "description": "Send a custom prompt to Copilot Chat." },
+    { "command": "acceptSuggestion", "description": "Accept the current Copilot inline suggestion." },
+    { "command": "logInteraction", "description": "Manually log a message to the interaction log." }
+  ]
+}

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log Viewer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 font-sans p-6">
+  <h2 class="text-2xl font-bold text-blue-700 mb-4">Copilot Automator Log Viewer</h2>
+  <div class="mb-4">
+    <button id="refreshBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-semibold">Refresh Logs</button>
+  </div>
+  <div id="logContainer" class="bg-white border border-gray-300 rounded p-4 h-96 overflow-y-auto text-sm font-mono shadow-inner"></div>
+  <script>
+    const vscode = acquireVsCodeApi();
+    function loadLogs() {
+      vscode.postMessage({ command: 'getLogs' });
+      document.getElementById('logContainer').textContent = 'Loading logs...';
+    }
+    document.getElementById('refreshBtn').onclick = loadLogs;
+    window.addEventListener('DOMContentLoaded', loadLogs);
+    window.addEventListener('message', event => {
+      if (event.data && event.data.command === 'logsData') {
+        document.getElementById('logContainer').textContent = event.data.logs || 'No logs found.';
+      }
+    });
+  </script>
+</body>
+</html>

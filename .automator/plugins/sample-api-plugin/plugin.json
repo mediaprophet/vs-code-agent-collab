@@ -1,0 +1,9 @@
+{
+  "name": "Sample API Plugin",
+  "version": "1.0.0",
+  "description": "Demonstrates API access from a plugin.",
+  "main": "index.js",
+  "contributions": {
+    "panels": ["ApiDemoPanel"]
+  }
+}

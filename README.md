@@ -25,6 +25,10 @@ Copilot Automator is a Visual Studio Code extension that leverages a local Large
 
 3. **Install from VSIX**:
    - Download the `.vsix` file from the [releases page](https://github.com/your-repo/copilot-automator/releases).
+
+## Project Folders
+
+- `.automator/`: Contains all agent support files, logs, available commands, and project/job/task tracking files for agent-driven automation.
    - In VS Code, go to Extensions view, click the "..." menu, and select "Install from VSIX...".
 
 ## Usage

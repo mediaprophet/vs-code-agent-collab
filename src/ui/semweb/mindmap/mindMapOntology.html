@@ -1,0 +1,87 @@
+  <button id="auto-layout-btn">Auto-Layout (AI)</button>
+  <!-- LLM Assistance Panel -->
+  <div id="llm-assist-panel" style="margin:1em 0;padding:0.5em;background:#f6f6f6;border:1px solid #ccc;">
+    <b>AI Assistance</b><br>
+    <textarea id="llm-assist-prompt" rows="2" style="width:98%;margin-bottom:0.5em;" placeholder="Ask the AI to generate, complete, or transform your ontology..."></textarea><br>
+    <label for="llm-assist-format">Output format:</label>
+    <select id="llm-assist-format">
+      <option value="json">JSON</option>
+      <option value="jsonld">JSON-LD</option>
+      <option value="ttl">Turtle</option>
+      <option value="rdfxml">RDF/XML</option>
+    </select>
+  <button id="llm-assist-run">Ask AI</button>
+  <button id="llm-enrich-btn">Enrich Ontology (AI)</button>
+    <pre id="llm-assist-result" style="margin-top:0.5em;max-height:10em;overflow:auto;background:#fff;"></pre>
+  </div>
+  <button id="show-metadata">Show Metadata</button>
+  <div id="metadata-panel" style="display:none;background:#f6f6f6;padding:1em;margin-top:1em;"></div>
+  <button id="save-version">Save Version</button>
+  <button id="load-version">Load Version</button>
+  <select id="version-list"><option value="">--Versions--</option></select>
+  <span id="version-status" style="margin-left:1em;color:#007acc;"></span>
+<!-- mindMapOntology.html (renamed) -->
+<!-- Re-export for renamed file -->
+<!-- Use the same content as index.html for now -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MindMap Ontology Workspace</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="mindmap-app">
+    <header>
+      <h1>MindMap Ontology Workspace</h1>
+      <button id="add-node">Add Node</button>
+      <button id="save-map">Save</button>
+      <button id="load-map">Load</button>
+      <button id="import-ontology">Import Ontology</button>
+      <button id="export-ontology">Export Ontology</button>
+      <select id="ontology-template">
+        <option value="">--Ontology Template--</option>
+        <option value="empty">Empty</option>
+        <option value="foaf">FOAF</option>
+        <option value="schema">Schema.org</option>
+        <option value="custom">Custom</option>
+      </select>
+        <button id="apply-template">Apply Template</button>
+        <label for="layout-select">Layout:</label>
+        <select id="layout-select">
+          <option value="force">Force-Directed</option>
+          <option value="radial">Radial</option>
+          <option value="hierarchical">Hierarchical</option>
+        </select>
+        <button id="apply-layout">Apply Layout</button>
+  <button id="validate-ontology">Validate Ontology</button>
+  <span id="validation-status" style="margin-left:1em;color:#c00;"></span>
+      <input type="file" id="import-ontology-file" style="display:none" accept=".json,.ttl,.rdf,.owl,.jsonld" />
+      <div id="mindmap-toolbar">
+        <input id="mindmap-search" type="text" placeholder="Search nodes..." style="width:12em;" />
+        <select id="mindmap-type-filter"></select>
+        <select id="mindmap-group-filter"></select>
+      </div>
+    </header>
+    <div id="mindmap-canvas"></div>
+  <!-- Reasoning Engine/Profile Selection UI (placeholder) -->
+  <div id="reasoning-controls" style="margin-top:1em;">
+    <label for="engine-select">Reasoning Engine:</label>
+    <select id="engine-select">
+      <option value="">-- Select Engine --</option>
+      <!-- Dynamically populated -->
+    </select>
+    <label for="profile-select">Profile:</label>
+    <select id="profile-select">
+      <option value="">-- Select Profile --</option>
+      <!-- Dynamically populated -->
+    </select>
+    <button id="run-reasoning">Run Reasoning</button>
+    <pre id="reasoning-result" style="margin-top:1em;background:#f6f6f6;padding:0.5em;"></pre>
+  </div>
+    <aside id="node-details"></aside>
+  </div>
+  <script src="mindMapOntology.js"></script>
+</body>
+</html>

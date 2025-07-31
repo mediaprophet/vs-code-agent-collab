@@ -1,0 +1,9 @@
+{
+  "name": "Event Demo Plugin",
+  "version": "1.0.0",
+  "description": "Demonstrates event and command API.",
+  "main": "index.js",
+  "contributions": {
+    "commands": ["eventDemo.hello"]
+  }
+}

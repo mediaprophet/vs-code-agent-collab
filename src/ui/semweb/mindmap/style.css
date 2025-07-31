@@ -1,0 +1,6 @@
+/* style.css for MindMap Ontology Workspace */
+#mindmap-app { font-family: sans-serif; margin: 0; padding: 0; }
+header { background: #222; color: #fff; padding: 1em; display: flex; align-items: center; gap: 1em; }
+#mindmap-canvas { min-height: 400px; background: #f9f9f9; padding: 1em; display: flex; flex-wrap: wrap; gap: 1em; }
+.mindmap-node { background: #fff; border: 1px solid #ccc; border-radius: 6px; padding: 1em; cursor: pointer; min-width: 100px; text-align: center; box-shadow: 1px 1px 4px #eee; }
+#node-details { background: #f0f0f0; padding: 1em; min-width: 200px; }

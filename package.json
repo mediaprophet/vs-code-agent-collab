@@ -113,6 +113,11 @@
           "icon": "images/robot-icon.png"
         },
         {
+          "id": "copilotAutomatorOntologies",
+          "name": "Ontologies",
+          "icon": "images/robot-icon.png"
+        },
+        {
           "id": "copilotAutomatorModels",
           "name": "Available LLM Models",
           "icon": "images/robot-icon.png"
@@ -156,7 +161,7 @@
       "onCommand:copilot-automator.refreshModels",
       "onCommand:copilot-automator.selectModel"
     ],
-     "chatParticipants": [
+    "chatParticipants": [
       {
         "id": "copilot-automator.chat",
         "name": "Copilot-Automator-Chat"
@@ -181,9 +186,13 @@
     "typescript": "^5.6.2"
   },
   "dependencies": {
+    "@comunica/query-sparql": "^4.3.0",
     "@lmstudio/sdk": "^1.4.0",
     "@vscode/prompt-tsx": "^0.4.0-alpha.5",
     "axios": "^1.11.0",
-    "glob": "^11.0.0"
+    "glob": "^11.0.0",
+    "jsonld": "^8.3.3",
+    "n3": "^1.26.0",
+    "rdflib": "^2.2.37"
   }
 }

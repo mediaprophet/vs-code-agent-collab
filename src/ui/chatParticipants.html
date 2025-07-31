@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Participants</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    .container { padding: 1.5em; max-width: 600px; margin: auto; }
+    h2 { margin-top: 0; }
+    .participants-list { margin: 1em 0; }
+    .participant { padding: 0.5em 0; border-bottom: 1px solid #eee; }
+    .actions { margin-top: 1em; }
+    button { margin-right: 0.5em; }
+    .add-form { display: flex; gap: 0.5em; margin-top: 1em; }
+    .add-form input { flex: 1; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Chat Participants</h2>
+    <div class="participants-list" id="participantsList"></div>
+    <form class="add-form" id="addParticipantForm">
+      <input type="text" id="participantName" placeholder="Name" required />
+      <input type="text" id="participantRole" placeholder="Role (optional)" />
+      <button type="submit">Add</button>
+    </form>
+    <div class="actions">
+      <button id="refreshBtn">Refresh</button>
+    </div>
+  </div>
+  <script>
+    const vscode = acquireVsCodeApi();
+    function renderParticipants(participants) {
+      const list = document.getElementById('participantsList');
+      list.innerHTML = '';
+      if (!participants.length) {
+        list.innerHTML = '<em>No participants yet.</em>';
+        return;
+      }
+      participants.forEach((p, idx) => {
+        const div = document.createElement('div');
+        div.className = 'participant';
+        div.innerHTML = `<strong>${p.name}</strong> <small>${p.role || ''}</small> <button data-idx="${idx}" class="removeBtn">Remove</button>`;
+        list.appendChild(div);
+      });
+    }
+    window.addEventListener('message', event => {
+      const msg = event.data;
+      if (msg.command === 'participantsList') {
+        renderParticipants(msg.participants);
+      }
+    });
+    document.getElementById('addParticipantForm').onsubmit = function(e) {
+      e.preventDefault();
+      const name = document.getElementById('participantName').value.trim();
+      const role = document.getElementById('participantRole').value.trim();
+      if (name) {
+        vscode.postMessage({ command: 'addParticipant', name, role });
+        document.getElementById('participantName').value = '';
+        document.getElementById('participantRole').value = '';
+      }
+    };
+    document.getElementById('refreshBtn').onclick = function() {
+      vscode.postMessage({ command: 'getParticipants' });
+    };
+    document.getElementById('participantsList').onclick = function(e) {
+      if (e.target.classList.contains('removeBtn')) {
+        vscode.postMessage({ command: 'removeParticipant', idx: parseInt(e.target.dataset.idx, 10) });
+      }
+    };
+    // Initial load
+    vscode.postMessage({ command: 'getParticipants' });
+  </script>
+</body>
+</html>

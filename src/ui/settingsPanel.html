@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Copilot Automator Settings</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 font-sans p-6">
+  <h2 class="text-2xl font-bold text-blue-700 mb-4">Copilot Automator Settings</h2>
+  <form id="settingsForm" class="space-y-4 max-w-xl">
+    <div>
+      <label class="block font-semibold mb-1" for="llmApiUrl">LLM API URL</label>
+      <input type="text" id="llmApiUrl" name="llmApiUrl" class="w-full border rounded px-2 py-1" />
+    </div>
+    <div>
+      <label class="block font-semibold mb-1" for="llmModel">LLM Model</label>
+      <input type="text" id="llmModel" name="llmModel" class="w-full border rounded px-2 py-1" />
+    </div>
+    <div>
+      <label class="block font-semibold mb-1" for="llmTemp">LLM Temperature</label>
+      <input type="number" step="0.01" min="0" max="2" id="llmTemp" name="llmTemp" class="w-full border rounded px-2 py-1" />
+    </div>
+    <div>
+      <label class="block font-semibold mb-1" for="maxPrompts">Max Prompts per Session</label>
+      <input type="number" min="1" id="maxPrompts" name="maxPrompts" class="w-full border rounded px-2 py-1" />
+    </div>
+    <div>
+      <label class="block font-semibold mb-1" for="contextSource">Context Source</label>
+      <select id="contextSource" name="contextSource" class="w-full border rounded px-2 py-1">
+        <option value="editor">Editor</option>
+        <option value="files">Files</option>
+        <option value="both">Both</option>
+      </select>
+    </div>
+    <div>
+      <label class="block font-semibold mb-1" for="fileReviewPaths">File Review Paths</label>
+      <input type="text" id="fileReviewPaths" name="fileReviewPaths" class="w-full border rounded px-2 py-1" placeholder="e.g. src/,lib/" />
+    </div>
+    <div>
+      <label class="block font-semibold mb-1" for="specResourceUrls">Specification Resource URLs</label>
+      <textarea id="specResourceUrls" name="specResourceUrls" class="w-full border rounded px-2 py-1" rows="2" placeholder="One URL per line"></textarea>
+    </div>
+    <div class="flex gap-4 mt-6">
+      <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-semibold">Save Settings</button>
+    </div>
+  </form>
+  <div id="saveStatus" class="mt-4 text-green-700 font-semibold"></div>
+  <script>
+    const vscode = acquireVsCodeApi();
+    window.addEventListener('DOMContentLoaded', () => {
+      // Populate form fields from VS Code settings (injected by extension)
+      if (window.initialSettings) {
+        document.getElementById('llmApiUrl').value = window.initialSettings.llmApiUrl || '';
+        document.getElementById('llmModel').value = window.initialSettings.llmModel || '';
+        document.getElementById('llmTemp').value = window.initialSettings.llmTemp || 0.7;
+        document.getElementById('maxPrompts').value = window.initialSettings.maxPrompts || 10;
+        document.getElementById('contextSource').value = window.initialSettings.contextSource || 'editor';
+        document.getElementById('fileReviewPaths').value = window.initialSettings.fileReviewPaths || '';
+        document.getElementById('specResourceUrls').value = window.initialSettings.specResourceUrls || '';
+      }
+    });
+    document.getElementById('settingsForm').onsubmit = function(e) {
+      e.preventDefault();
+      const form = e.target;
+      vscode.postMessage({
+        command: 'saveSettings',
+        llmApiUrl: form.llmApiUrl.value,
+        llmModel: form.llmModel.value,
+        llmTemp: parseFloat(form.llmTemp.value),
+        maxPrompts: parseInt(form.maxPrompts.value, 10),
+        contextSource: form.contextSource.value,
+        fileReviewPaths: form.fileReviewPaths.value,
+        specResourceUrls: form.specResourceUrls.value
+      });
+      document.getElementById('saveStatus').textContent = 'Saving...';
+    };
+    window.addEventListener('message', event => {
+      if (event.data && event.data.command === 'settingsSaved') {
+        document.getElementById('saveStatus').textContent = 'Settings saved!';
+      }
+    });
+  </script>
+</body>
+</html>

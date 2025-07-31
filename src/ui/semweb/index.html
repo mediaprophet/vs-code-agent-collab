@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Semantic Web Tools</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    .tabs { display: flex; border-bottom: 1px solid #ccc; }
+    .tab { padding: 1em; cursor: pointer; border: none; background: #f6f6f6; border-right: 1px solid #ccc; }
+    .tab.active { background: #fff; border-bottom: 2px solid #007acc; }
+    .tab-content { display: none; padding: 1.5em; }
+    .tab-content.active { display: block; }
+  </style>
+</head>
+<body>
+  <div class="tabs">
+    <button class="tab active" data-tab="namespaces">Namespaces</button>
+    <button class="tab" data-tab="sparql">SPARQL Query</button>
+    <button class="tab" data-tab="ontology">Ontology & Mappings</button>
+  </div>
+  <div id="namespaces" class="tab-content active"></div>
+  <div id="sparql" class="tab-content"></div>
+  <div id="ontology" class="tab-content"></div>
+  <script src="namespaces.js"></script>
+  <script src="sparql.js"></script>
+  <script src="ontology.js"></script>
+  <script>
+    // Tab switching logic
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.onclick = function() {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab).classList.add('active');
+      };
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Automator Folder Setup</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    .container { padding: 1.5em; max-width: 600px; margin: auto; }
+    h2 { margin-top: 0; }
+    .section { margin-bottom: 2em; }
+    textarea { width: 100%; min-height: 80px; }
+    button { margin-top: 1em; }
+    .result { background: #f6f6f6; padding: 1em; border-radius: 6px; margin-top: 1em; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Automator Folder Setup</h2>
+    <div class="section">
+      <button id="quickCreateBtn">Create .automator Folder (Quick)</button>
+    </div>
+    <div class="section">
+      <form id="projectTypeForm">
+        <label>Project Type:
+          <select id="projectType">
+            <option value="">Select type...</option>
+            <option value="vs-code-extension">VS Code Extension</option>
+            <option value="obsidian-extension">Obsidian Extension</option>
+            <option value="w3c-solid-app">W3C Solid App</option>
+            <option value="other">Other</option>
+          </select>
+        </label><br>
+        <label>Name: <input type="text" id="projectName" /></label><br>
+        <label>Description:<br>
+          <textarea id="projectDescription"></textarea>
+        </label><br>
+        <button type="submit">Create with Form</button>
+      </form>
+    </div>
+    <div class="section">
+      <form id="agentForm">
+        <label>Describe your project for the agent:<br>
+          <textarea id="agentDescription" placeholder="Describe your project goals, tech stack, etc..."></textarea>
+        </label><br>
+        <button type="submit">Let Agent Generate Setup</button>
+      </form>
+    </div>
+    <div id="result" class="result" style="display:none;"></div>
+  </div>
+  <script>
+    const vscode = acquireVsCodeApi();
+    document.getElementById('quickCreateBtn').onclick = function() {
+      vscode.postMessage({ command: 'quickCreateAutomator' });
+    };
+    document.getElementById('projectTypeForm').onsubmit = function(e) {
+      e.preventDefault();
+      vscode.postMessage({
+        command: 'formCreateAutomator',
+        projectType: document.getElementById('projectType').value,
+        name: document.getElementById('projectName').value,
+        description: document.getElementById('projectDescription').value
+      });
+    };
+    document.getElementById('agentForm').onsubmit = function(e) {
+      e.preventDefault();
+      vscode.postMessage({
+        command: 'agentCreateAutomator',
+        description: document.getElementById('agentDescription').value
+      });
+    };
+    window.addEventListener('message', event => {
+      const msg = event.data;
+      if (msg.command === 'showResult') {
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = msg.html;
+        resultDiv.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>
