@@ -5,13 +5,20 @@ import * as vscode from 'vscode';
 
 import { LMStudioClient } from '@lmstudio/sdk';
 
-// Streaming implementation: send prompt to LM Studio local model and stream response fragments
+
+/**
+ * Streams a prompt to the local LLM and calls onFragment for each response fragment.
+ * @param prompt The user prompt
+ * @param onFragment Callback for streaming fragments
+ * @returns The full response string
+ */
 async function streamPromptFromLocalLLM(prompt: string, onFragment: (fragment: string) => void): Promise<string> {
     try {
         let model = 'llama-3.2-3b-instruct';
         let temperature = 0.7;
-        if (vscode.extensions.getExtension('mediaprophet.copilot-automator-grok-gpt')?.exports?.context) {
-            const ctx = vscode.extensions.getExtension('mediaprophet.copilot-automator-grok-gpt')?.exports?.context;
+        const ext = vscode.extensions.getExtension('mediaprophet.copilot-automator-grok-gpt');
+        if (ext?.exports?.context) {
+            const ctx: vscode.ExtensionContext = ext.exports.context;
             model = ctx.globalState.get('llmModel', model) || model;
             temperature = ctx.globalState.get('llmTemp', temperature) || temperature;
         }
@@ -33,16 +40,20 @@ async function streamPromptFromLocalLLM(prompt: string, onFragment: (fragment: s
                 }
             }
             return response || '[No response from model]';
-        } catch (err: any) {
+        } catch (err) {
             onFragment('Please load or select a model in LM Studio and the Automator extension.');
             return 'No model loaded.';
         }
-    } catch (err: any) {
-        onFragment('Error: ' + (err?.message || String(err)));
-        return 'Error: ' + (err?.message || String(err));
+    } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        onFragment('Error: ' + errorMessage);
+        return 'Error: ' + errorMessage;
     }
 }
 
+/**
+ * Provides the Local Chat Panel webview for streaming LLM chat.
+ */
 export class LocalChatPanelProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'copilotAutomatorLocalChat';
 
@@ -80,6 +91,9 @@ export class LocalChatPanelProvider implements vscode.WebviewViewProvider {
         });
     }
 
+    /**
+     * Refreshes the HTML content of the webview.
+     */
     public refreshHtml() {
         if (!this.webviewView) return;
         let selectedModel = 'select model';
@@ -87,13 +101,17 @@ export class LocalChatPanelProvider implements vscode.WebviewViewProvider {
             if (this.context) {
                 selectedModel = this.context.globalState.get('llmModel', 'select model') || 'select model';
             }
-        } catch {}
-        if (!selectedModel) {
+        } catch {
             selectedModel = 'select model';
         }
         this.webviewView.webview.html = this.getHtml(selectedModel);
     }
 
+    /**
+     * Gets the HTML content for the webview, injecting the selected model and script URI.
+     * @param selectedModel The selected LLM model name
+     * @returns HTML string
+     */
     private getHtml(selectedModel: string): string {
         const fs = require('fs');
         const path = require('path');
@@ -106,8 +124,8 @@ export class LocalChatPanelProvider implements vscode.WebviewViewProvider {
 
         // Resolve the script path for the webview
         let scriptUriString = 'localChatPanel.js';
-        if (this.context && (this.context as any).extensionUri) {
-            const extUri = (this.context as any).extensionUri;
+        if (this.context && this.context.extensionUri) {
+            const extUri = this.context.extensionUri;
             const scriptPathOnDisk = vscode.Uri.joinPath(extUri, 'out', 'ui', 'localChatPanel.js');
             scriptUriString = scriptPathOnDisk.toString();
         }

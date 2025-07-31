@@ -1,0 +1,30 @@
+{
+  "description": "Modularization and code quality improvement plan for mindmap.js and related helpers.",
+  "status": "complete",
+  "tasks": [
+    {
+      "id": "extract_helpers",
+      "title": "Extract all helper logic to separate modules",
+      "details": "Move history, layouts, pan/zoom, palette, bulk ops, metadata, versioning, validation, templates, import/export, events, rendering, and reasoning integration into their own files if not already.",
+      "done": true
+    },
+    {
+      "id": "deduplicate_state",
+      "title": "Ensure single source of truth for mindmap state",
+      "details": "All state (mindMap, selectedNodeId, etc.) should be managed in one place and passed to helpers as needed.",
+      "done": true
+    },
+    {
+      "id": "main_file_cleanup",
+      "title": "Clean up main mindmap.js file",
+      "details": "Main file should only wire together modules, contain no duplicate or misplaced logic, and be well documented.",
+      "done": true
+    },
+    {
+      "id": "document_types",
+      "title": "Add documentation and type annotations",
+      "details": "Add JSDoc/type annotations to all modules and main file for AI and human maintainability.",
+      "done": true
+    }
+  ]
+}

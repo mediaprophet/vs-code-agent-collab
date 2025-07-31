@@ -1,32 +1,14 @@
-const autoLayoutBtn = document.getElementById('auto-layout-btn');
-if (autoLayoutBtn) {
-  autoLayoutBtn.onclick = () => {
-    // Prefer force-directed, but could be replaced with LLM/AI call
-    applyForceDirectedLayout(mindMap);
-    pushHistory();
-    renderMindMap();
-  };
-}
+
+/**
+ * Main entry point for MindMap Ontology UI.
+ * Wires together all modular helpers and manages global state.
+ * All helpers are imported from ./functions/ for maintainability and AI-friendliness.
+ *
+ * @module mindmap
+ */
+
 import { setupLLMAssist } from './functions/llmAssist.js';
-// --- LLM Assistance ---
-setupLLMAssist(mindMap);
 import { applyForceDirectedLayout, applyRadialLayout, applyHierarchicalLayout } from './functions/graphLayouts.js';
-// --- Graph Layout Controls ---
-const layoutSelect = document.getElementById('layout-select');
-const applyLayoutBtn = document.getElementById('apply-layout');
-if (layoutSelect && applyLayoutBtn) {
-  applyLayoutBtn.onclick = () => {
-    if (layoutSelect.value === 'force') {
-      applyForceDirectedLayout(mindMap);
-    } else if (layoutSelect.value === 'radial') {
-      applyRadialLayout(mindMap);
-    } else if (layoutSelect.value === 'hierarchical') {
-      applyHierarchicalLayout(mindMap);
-    }
-    pushHistory();
-    renderMindMap();
-  };
-}
 import { enableInlineEditing, enableTypeEditing } from './functions/inlineEditing.js';
 import { setupReasoningIntegration } from './functions/reasoningIntegration.js';
 import { showNodeDetails } from './functions/nodeDetails.js';
@@ -44,13 +26,23 @@ import { setupGeneralEvents } from './functions/events.js';
 import { renderNodes } from './functions/renderNodes.js';
 import { renderEdges } from './functions/renderEdges.js';
 
+/**
+ * @typedef {Object} MindMap
+ * @property {Array<Object>} nodes
+ * @property {Array<Object>} edges
+ */
 
-// --- Mindmap State ---
+/** @type {MindMap} */
 let mindMap = { nodes: [], edges: [] };
+/** @type {?string} */
 let selectedNodeId = null;
+/** @type {Set<string>} */
 let selectedNodeIds = new Set();
+/** @type {Array<string>} */
 const NODE_TYPES = ['class', 'property', 'individual', 'relation', 'note'];
+/** @type {HTMLElement} */
 const canvas = document.getElementById('mindmap-canvas');
+/** @type {HTMLElement} */
 const nodeDetails = document.getElementById('node-details');
 
 // --- Modularized Setup ---
@@ -65,6 +57,34 @@ setupValidation(mindMap);
 setupTemplates(mindMap, renderMindMap);
 setupImportExport(mindMap, renderMindMap);
 setupGeneralEvents();
+setupLLMAssist(mindMap);
+
+// --- Graph Layout Controls ---
+const layoutSelect = document.getElementById('layout-select');
+const applyLayoutBtn = document.getElementById('apply-layout');
+if (layoutSelect && applyLayoutBtn) {
+  applyLayoutBtn.onclick = () => {
+    if (layoutSelect.value === 'force') {
+      applyForceDirectedLayout(mindMap);
+    } else if (layoutSelect.value === 'radial') {
+      applyRadialLayout(mindMap);
+    } else if (layoutSelect.value === 'hierarchical') {
+      applyHierarchicalLayout(mindMap);
+    }
+    pushHistory();
+    renderMindMap();
+  };
+}
+
+// --- Auto Layout Button ---
+const autoLayoutBtn = document.getElementById('auto-layout-btn');
+if (autoLayoutBtn) {
+  autoLayoutBtn.onclick = () => {
+    applyForceDirectedLayout(mindMap);
+    pushHistory();
+    renderMindMap();
+  };
+}
 
 // --- Add Node Button Handler ---
 const addNodeBtn = document.getElementById('add-node');
@@ -81,11 +101,27 @@ if (addNodeBtn) {
   };
 }
 
-// --- Main Render Function ---
+/**
+ * Main render function for the mindmap canvas.
+ * Renders all nodes and edges, applies styles, and manages selection.
+ */
 function renderMindMap() {
   canvas.innerHTML = '';
   renderEdges(mindMap, canvas);
-  renderNodes(mindMap, canvas, panZoom.zoom, panZoom.panX, panZoom.panY, selectedNodeId, selectedNodeIds, NODE_TYPES, enableInlineEditing, pushHistory, renderMindMap, showNodeDetails);
+  renderNodes(
+    mindMap,
+    canvas,
+    panZoom.zoom,
+    panZoom.panX,
+    panZoom.panY,
+    selectedNodeId,
+    selectedNodeIds,
+    NODE_TYPES,
+    enableInlineEditing,
+    pushHistory,
+    renderMindMap,
+    showNodeDetails
+  );
   // Set canvas to relative for absolute positioning
   canvas.style.position = 'relative';
   canvas.style.minHeight = '400px';
@@ -98,5 +134,9 @@ function renderMindMap() {
 }
 
 // --- Reasoning Integration ---
+/**
+ * Exports the current mindmap as a JSON string for reasoning/ontology tools.
+ * @returns {string}
+ */
 function exportOntologyData() { return JSON.stringify(mindMap); }
 setupReasoningIntegration(exportOntologyData);

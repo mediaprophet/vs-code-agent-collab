@@ -1,4 +1,7 @@
-// --- Namespaces ---
+/**
+ * Reads namespaces from the semantic web namespaces file.
+ * @returns Promise of array of namespace objects
+ */
 export async function readNamespaces(): Promise<Array<{ prefix: string, uri: string }>> {
   const { namespacesFile } = await ensureAutomatorSemWebStructure();
   if (!namespacesFile) return [];
@@ -10,6 +13,11 @@ export async function readNamespaces(): Promise<Array<{ prefix: string, uri: str
   }
 }
 
+/**
+ * Writes namespaces to the semantic web namespaces file.
+ * @param namespaces Array of namespace objects
+ * @returns Promise of success boolean
+ */
 export async function writeNamespaces(namespaces: Array<{ prefix: string, uri: string }>): Promise<boolean> {
   const { namespacesFile } = await ensureAutomatorSemWebStructure();
   if (!namespacesFile) return false;
@@ -18,6 +26,10 @@ export async function writeNamespaces(namespaces: Array<{ prefix: string, uri: s
 }
 
 // --- Mappings ---
+/**
+ * Reads mappings from the semantic web mappings file.
+ * @returns Promise of array of mappings
+ */
 export async function readMappings(): Promise<any[]> {
   const { mappingsFile } = await ensureAutomatorSemWebStructure();
   if (!mappingsFile) return [];
@@ -29,6 +41,11 @@ export async function readMappings(): Promise<any[]> {
   }
 }
 
+/**
+ * Writes mappings to the semantic web mappings file.
+ * @param mappings Array of mapping objects
+ * @returns Promise of success boolean
+ */
 export async function writeMappings(mappings: any[]): Promise<boolean> {
   const { mappingsFile } = await ensureAutomatorSemWebStructure();
   if (!mappingsFile) return false;
@@ -37,6 +54,10 @@ export async function writeMappings(mappings: any[]): Promise<boolean> {
 }
 
 // --- SPARQL History ---
+/**
+ * Reads SPARQL query history from the semantic web history file.
+ * @returns Promise of array of SPARQL history entries
+ */
 export async function readSparqlHistory(): Promise<any[]> {
   const { sparqlHistoryFile } = await ensureAutomatorSemWebStructure();
   if (!sparqlHistoryFile) return [];
@@ -48,6 +69,11 @@ export async function readSparqlHistory(): Promise<any[]> {
   }
 }
 
+/**
+ * Writes SPARQL query history to the semantic web history file.
+ * @param history Array of SPARQL history entries
+ * @returns Promise of success boolean
+ */
 export async function writeSparqlHistory(history: any[]): Promise<boolean> {
   const { sparqlHistoryFile } = await ensureAutomatorSemWebStructure();
   if (!sparqlHistoryFile) return false;
@@ -55,6 +81,10 @@ export async function writeSparqlHistory(history: any[]): Promise<boolean> {
   return true;
 }
 // Ensure .automator/semweb/ and recommended files exist
+/**
+ * Ensures the .automator/semweb/ directory and recommended files exist.
+ * @returns Promise of paths to created/ensured files
+ */
 export async function ensureAutomatorSemWebStructure(): Promise<{
   semwebDir?: string,
   dataFile?: string,
@@ -81,6 +111,10 @@ export async function ensureAutomatorSemWebStructure(): Promise<{
   return { semwebDir, dataFile, namespacesFile, mappingsFile, sparqlHistoryFile };
 }
 // File-based RDF storage in .automator/semweb/data.ttl
+/**
+ * Ensures the semantic web data file exists and returns its path.
+ * @returns Promise of the data file path or undefined
+ */
 export async function ensureSemWebDataFile(): Promise<string | undefined> {
   const automatorPath = getAutomatorFolderPath();
   if (!automatorPath) return undefined;
@@ -96,12 +130,21 @@ export async function ensureSemWebDataFile(): Promise<string | undefined> {
   return dataFile;
 }
 
+/**
+ * Reads the semantic web data file content.
+ * @returns Promise of the file content or undefined
+ */
 export async function readSemWebDataFile(): Promise<string | undefined> {
   const file = await ensureSemWebDataFile();
   if (!file) return undefined;
   return fs.readFile(file, 'utf8');
 }
 
+/**
+ * Writes content to the semantic web data file.
+ * @param content The content to write
+ * @returns Promise of success boolean
+ */
 export async function writeSemWebDataFile(content: string): Promise<boolean> {
   const file = await ensureSemWebDataFile();
   if (!file) return false;
@@ -109,8 +152,10 @@ export async function writeSemWebDataFile(content: string): Promise<boolean> {
   return true;
 }
 
-// Stub for future embedded triple store support
-// e.g., LevelGraph, quadstore, or similar
+/**
+ * Stub for future embedded triple store support (e.g., LevelGraph, quadstore).
+ * @throws Error always (not implemented)
+ */
 export async function getEmbeddedTripleStore() {
   // TODO: Implement embedded triple store option
   throw new Error('Embedded triple store not implemented yet.');
@@ -122,6 +167,10 @@ import { Writer, Parser } from 'n3';
 import * as $rdf from 'rdflib';
 import { getAutomatorFolderPath } from './automatorFolder';
 
+/**
+ * Ensures the ontologies folder exists and returns its path.
+ * @returns Promise of the ontologies folder path or undefined
+ */
 export async function ensureOntologiesFolder(): Promise<string | undefined> {
   const automatorPath = getAutomatorFolderPath();
   if (!automatorPath) return undefined;
@@ -134,6 +183,12 @@ export async function ensureOntologiesFolder(): Promise<string | undefined> {
   }
 }
 
+/**
+ * Saves the original ontology file content to the ontologies folder.
+ * @param filename The ontology filename
+ * @param content The ontology content
+ * @returns Promise of the saved file path or undefined
+ */
 export async function saveOriginalOntology(filename: string, content: string): Promise<string | undefined> {
   const folder = await ensureOntologiesFolder();
   if (!folder) return undefined;
@@ -142,6 +197,12 @@ export async function saveOriginalOntology(filename: string, content: string): P
   return filePath;
 }
 
+/**
+ * Converts ontology content to RDF/JSON-LD format.
+ * @param ontologyContent The ontology content as a string
+ * @param format The input format ('jsonld', 'turtle', 'rdfxml')
+ * @returns Promise of the converted content as a string, or undefined on error
+ */
 export async function convertOntologyToRDFJSON(ontologyContent: string, format: 'jsonld' | 'turtle' | 'rdfxml' = 'jsonld'): Promise<string | undefined> {
   try {
     if (format === 'jsonld') {
@@ -169,11 +230,18 @@ export async function convertOntologyToRDFJSON(ontologyContent: string, format: 
       return typeof jsonldStr === 'string' ? jsonldStr : JSON.stringify(jsonldStr);
     }
     return undefined;
-  } catch {
+  } catch (err) {
+    // Optionally log or notify user
     return undefined;
   }
 }
 
+/**
+ * Saves the RDF/JSON-LD content of an ontology to the ontologies folder.
+ * @param filename The original ontology filename
+ * @param rdfjson The RDF/JSON-LD content
+ * @returns Promise of the saved file path or undefined
+ */
 export async function saveOntologyRDFJSON(filename: string, rdfjson: string): Promise<string | undefined> {
   const folder = await ensureOntologiesFolder();
   if (!folder) return undefined;
@@ -182,6 +250,13 @@ export async function saveOntologyRDFJSON(filename: string, rdfjson: string): Pr
   return outPath;
 }
 
+/**
+ * Adds an ontology by saving the original and its RDF/JSON-LD conversion.
+ * @param originalName The original ontology filename
+ * @param content The ontology content
+ * @param format The input format ('jsonld', 'turtle', 'rdfxml')
+ * @returns Promise of paths to the original and RDF/JSON-LD files
+ */
 export async function addOntology(originalName: string, content: string, format: 'jsonld' | 'turtle' | 'rdfxml' = 'jsonld'): Promise<{ original: string, rdfjson?: string }> {
   const originalPath = await saveOriginalOntology(originalName, content);
   let rdfjsonPath;

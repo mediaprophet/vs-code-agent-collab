@@ -1,41 +1,37 @@
-// Stub for HistoryProvider to avoid reference errors
-// Remove or replace with actual import as needed
-class HistoryProvider {
-    add(_item: any) {}
-}
-const historyProvider = new HistoryProvider();
+
 import * as vscode from 'vscode';
 import { logInteraction } from './history';
 
-// Define log level constants
+/**
+ * Log level constants for interaction logging.
+ */
 const LOG_LEVEL_INFO = 'info';
 const LOG_LEVEL_ERROR = 'error';
 
-// Accept Copilot suggestion and log interaction
-export async function acceptCopilotSuggestion() {
+/**
+ * Accepts a Copilot suggestion and logs the interaction.
+ * Handles errors robustly and notifies the user.
+ */
+export async function acceptCopilotSuggestion(): Promise<void> {
     const PROMPT_DELAY_MS = 2000;
     await new Promise(resolve => setTimeout(resolve, PROMPT_DELAY_MS));
     try {
         await vscode.commands.executeCommand('editor.action.inlineSuggest.commit');
         logInteraction(LOG_LEVEL_INFO, 'SUGGESTION_ACCEPTED', 'Accepted inline suggestion.', '');
         vscode.window.showInformationMessage('Accepted Copilot suggestion.');
-    } catch (err: unknown) {
+    } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
         logInteraction(LOG_LEVEL_ERROR, 'SUGGESTION_ACCEPT_FAILED', errorMessage, '');
         vscode.window.showErrorMessage(`Failed to accept suggestion: ${errorMessage}`);
     }
-    void historyProvider;
-    // Placeholder for loop logic
-    // while (true) {
-    //     // Check for pause/stop conditions in shared state (import from state.ts if needed)
-    //     // Generate prompt, send to chat, accept suggestion, log, etc.
-    //     // For now, just break to avoid infinite loop in placeholder.
-    //     break;
-    // }
 }
 
-// Read and execute steps from the first instruction file in the instructions folder
-export async function executeFirstInstructionFile() {
+
+/**
+ * Reads and executes steps from the first instruction file in the instructions folder.
+ * Handles missing files and JSON parse errors gracefully.
+ */
+export async function executeFirstInstructionFile(): Promise<void> {
     const fs = await import('fs');
     const path = await import('path');
     const instructionsDir = path.join(__dirname, '../../instructions');
@@ -49,8 +45,14 @@ export async function executeFirstInstructionFile() {
         return;
     }
     const filePath = path.join(instructionsDir, files[0]);
-    const content = fs.readFileSync(filePath, 'utf-8');
-    let steps;
+    let content = '';
+    try {
+        content = fs.readFileSync(filePath, 'utf-8');
+    } catch (err) {
+        vscode.window.showErrorMessage('Failed to read instruction file: ' + files[0]);
+        return;
+    }
+    let steps: unknown;
     try {
         steps = JSON.parse(content);
     } catch (e) {
@@ -61,8 +63,12 @@ export async function executeFirstInstructionFile() {
     // Here you would iterate and execute steps as needed
 }
 
-// Validate all JSON instruction files in the instructions directory
-export async function validateInstructionFiles() {
+
+/**
+ * Validates all JSON instruction files in the instructions directory.
+ * Notifies the user of any invalid files and summarizes the results.
+ */
+export async function validateInstructionFiles(): Promise<void> {
     const fs = await import('fs');
     const path = await import('path');
     const instructionsDir = path.join(__dirname, '../../instructions');
@@ -77,7 +83,7 @@ export async function validateInstructionFiles() {
             const content = fs.readFileSync(path.join(instructionsDir, file), 'utf-8');
             JSON.parse(content);
             valid++;
-        } catch {
+        } catch (err) {
             invalid++;
             vscode.window.showWarningMessage(`Invalid JSON in instruction file: ${file}`);
         }
@@ -85,8 +91,12 @@ export async function validateInstructionFiles() {
     vscode.window.showInformationMessage(`Validation complete: ${valid} valid, ${invalid} invalid.`);
 }
 
-// Create a template instruction file in the instructions directory
-export async function createTemplateInstructionFile() {
+
+/**
+ * Creates a template instruction file in the instructions directory.
+ * Lets the user pick files for automation and notifies them of the selection.
+ */
+export async function createTemplateInstructionFile(): Promise<void> {
     const fs = await import('fs');
     const path = await import('path');
     const instructionsDir = path.join(__dirname, '../../instructions');
@@ -112,7 +122,11 @@ export async function createTemplateInstructionFile() {
     }
 }
 
-// Return a comma-separated list of .ts files in the src directory
+
+/**
+ * Returns a comma-separated list of .ts files in the src directory.
+ * @returns Comma-separated string of TypeScript filenames.
+ */
 export async function listTsFilesInSrc(): Promise<string> {
     const fs = await import('fs');
     const path = await import('path');
@@ -123,7 +137,10 @@ export async function listTsFilesInSrc(): Promise<string> {
     return files.join(', ');
 }
 
-// Example: Return a static string or fetch from a resource
+
+/**
+ * Returns the specification URL (static or fetched from a resource).
+ */
 export function getSpecUrl(): string {
     return 'https://example.com/spec';
 }

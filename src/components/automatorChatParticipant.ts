@@ -1,12 +1,19 @@
 import * as vscode from 'vscode';
 
 
+
+/**
+ * Represents a slash command for the Automator chat participant.
+ */
 type SlashCommand = {
     name: string;
     description: string;
     action: (stream: vscode.ChatResponseStream, args?: string) => Promise<void>;
 };
 
+/**
+ * List of supported slash commands for the Automator chat participant.
+ */
 const SLASH_COMMANDS: SlashCommand[] = [
     {
         name: 'run',
@@ -59,8 +66,9 @@ const SLASH_COMMANDS: SlashCommand[] = [
                 if (!fullResponse) {
                     stream.markdown('[No response from model]');
                 }
-            } catch (err: any) {
-                stream.markdown('❌ Error: ' + (err?.message || String(err)));
+            } catch (err) {
+                const errorMessage = err instanceof Error ? err.message : String(err);
+                stream.markdown('❌ Error: ' + errorMessage);
             }
         }
     },
@@ -122,8 +130,15 @@ const SLASH_COMMANDS: SlashCommand[] = [
     }
 ];
 
-// Example function to build a prompt using prompt-tsx
-function buildLLMPrompt(userPrompt: string, workspaceName?: string, fileCount?: number) {
+
+/**
+ * Builds a prompt for the LLM using workspace context and user input.
+ * @param userPrompt The user's prompt
+ * @param workspaceName The workspace name
+ * @param fileCount The number of files in the workspace
+ * @returns The composed prompt string
+ */
+function buildLLMPrompt(userPrompt: string, workspaceName?: string, fileCount?: number): string {
     let prompt = 'You are a helpful coding assistant for VS Code.';
     if (workspaceName) {
         prompt += ` The current workspace is **${workspaceName}**.`;
@@ -135,8 +150,15 @@ function buildLLMPrompt(userPrompt: string, workspaceName?: string, fileCount?: 
     return prompt;
 }
 
-export function registerAutomatorChatParticipant(_context: vscode.ExtensionContext, onOutput: (output: string) => void) {
-    // const participantId = 'copilot-automator.chat';
+
+/**
+ * Registers the Automator chat participant handler for VS Code chat.
+ * Handles slash commands, Copilot message routing, and rich output.
+ * @param _context The extension context
+ * @param onOutput Callback for output events
+ * @returns The chat request handler
+ */
+export function registerAutomatorChatParticipant(_context: vscode.ExtensionContext, onOutput: (output: string) => void): vscode.ChatRequestHandler {
     const handler: vscode.ChatRequestHandler = async (
         request: vscode.ChatRequest,
         _chatContext: vscode.ChatContext,

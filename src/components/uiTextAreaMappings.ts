@@ -1,5 +1,8 @@
 import * as vscode from 'vscode';
 
+/**
+ * Represents a mapping between a UI text area and its type/description.
+ */
 export interface UITextAreaMapping {
     type: 'input' | 'output';
     uri: string; // URI of the document or webview (e.g., vscode-chat://...)
@@ -8,11 +11,20 @@ export interface UITextAreaMapping {
 
 export let uiTextAreaMappings: UITextAreaMapping[] = [];
 
+/**
+ * Loads UI text area mappings from VS Code global state.
+ * @param context Extension context
+ */
 export function loadUITextAreaMappings(context: vscode.ExtensionContext) {
     const mappings = context.globalState.get<UITextAreaMapping[]>('uiTextAreaMappings', []);
     uiTextAreaMappings = mappings;
 }
 
+/**
+ * Resolves a UI text area mapping by type, description, or URI.
+ * @param target Type, description, or URI to match
+ * @returns The matching mapping or undefined
+ */
 export function resolveUITextAreaMapping(target: string): UITextAreaMapping | undefined {
     return (
         uiTextAreaMappings.find(m => m.type === target) ||
@@ -21,6 +33,10 @@ export function resolveUITextAreaMapping(target: string): UITextAreaMapping | un
     );
 }
 
+/**
+ * Suggests likely Copilot Chat areas and allows the user to map them as input or output.
+ * @param context Extension context
+ */
 export async function suggestChatMappings(context: vscode.ExtensionContext) {
     const openDocs = vscode.workspace.textDocuments;
     const chatDocs = openDocs.filter(doc => doc.uri.scheme === 'vscode-chat');
@@ -48,6 +64,9 @@ export async function suggestChatMappings(context: vscode.ExtensionContext) {
     vscode.window.showInformationMessage(`Mapped ${type} area: ${mapping.uri}${description ? ` (${description})` : ''}`);
 }
 
+/**
+ * Exports UI text area mappings to a JSON file.
+ */
 export async function exportUITextAreaMappings() {
     if (uiTextAreaMappings.length === 0) {
         vscode.window.showInformationMessage('No UI text area mappings to export.');
@@ -63,6 +82,10 @@ export async function exportUITextAreaMappings() {
     vscode.window.showInformationMessage('UI text area mappings exported.');
 }
 
+/**
+ * Imports UI text area mappings from a JSON file.
+ * @param context Extension context
+ */
 export async function importUITextAreaMappings(context: vscode.ExtensionContext) {
     const [uri] = await vscode.window.showOpenDialog({
         canSelectMany: false,
@@ -82,10 +105,15 @@ export async function importUITextAreaMappings(context: vscode.ExtensionContext)
             vscode.window.showErrorMessage('Invalid mappings file.');
         }
     } catch (err) {
-        vscode.window.showErrorMessage('Failed to import mappings: ' + err);
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        vscode.window.showErrorMessage('Failed to import mappings: ' + errorMessage);
     }
 }
 
+/**
+ * Allows the user to edit or remove UI text area mappings.
+ * @param context Extension context
+ */
 export async function manageUITextAreaMappings(context: vscode.ExtensionContext) {
     if (uiTextAreaMappings.length === 0) {
         vscode.window.showInformationMessage('No UI text area mappings found.');

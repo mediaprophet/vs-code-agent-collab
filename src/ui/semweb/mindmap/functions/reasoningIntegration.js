@@ -1,33 +1,14 @@
 // reasoningIntegration.js
 // Handles reasoning engine registration, UI wiring, invocation, and result display for the mindmap
-import { populateReasoningUI } from './reasoningUI.js';
-import { ToolsSystem } from '../../toolsSystem.js';
-import { RDFSReasoningEngine } from '../../reasoningEngines/rdfsEngine.js';
-import { OWLReasoningEngine } from '../../reasoningEngines/owlEngine.js';
-import { SHACLReasoningEngine } from '../../reasoningEngines/shaclEngine.js';
-import { SPARQLReasoningEngine } from '../../reasoningEngines/sparqlEngine.js';
-import { RuleBasedReasoningEngine } from '../../reasoningEngines/ruleBasedEngine.js';
-import { CogAIReasoningEngine } from '../../reasoningEngines/cogaiEngine.js';
-import { RuleMLReasoningEngine } from '../../reasoningEngines/rulemlEngine.js';
-import { ODRLReasoningEngine } from '../../reasoningEngines/odrlEngine.js';
-import { SWRLReasoningEngine } from '../../reasoningEngines/swrlEngine.js';
 
-export const toolsSystem = new ToolsSystem();
-toolsSystem.register('reasoner', 'RDFS', new RDFSReasoningEngine());
-toolsSystem.register('reasoner', 'OWL RL/DL', new OWLReasoningEngine());
-toolsSystem.register('reasoner', 'SHACL', new SHACLReasoningEngine());
-toolsSystem.register('reasoner', 'SPARQL', new SPARQLReasoningEngine());
-toolsSystem.register('reasoner', 'Rule-Based', new RuleBasedReasoningEngine());
-toolsSystem.register('reasoner', 'CogAI', new CogAIReasoningEngine());
-toolsSystem.register('reasoner', 'RuleML', new RuleMLReasoningEngine());
-toolsSystem.register('reasoner', 'ODRL', new ODRLReasoningEngine());
-toolsSystem.register('reasoner', 'SWRL', new SWRLReasoningEngine());
+import { populateReasoningUI } from './reasoningUI.js';
+import { reasoningEngineRegistry, getReasoner, listReasoners } from '../../../../reasoningEngines/index.js';
 
 let selectedReasoner = null;
 let selectedReasonerProfile = null;
 
 export function setReasoner(name) {
-  selectedReasoner = toolsSystem.get('reasoner', name);
+  selectedReasoner = getReasoner(name);
 }
 export function setReasonerProfile(profile) {
   selectedReasonerProfile = profile;
@@ -35,6 +16,10 @@ export function setReasonerProfile(profile) {
 
 export function setupReasoningIntegration(getOntologyData) {
   document.addEventListener('DOMContentLoaded', () => {
+    // Use the new registry for engine listing
+    const toolsSystem = {
+      list: () => listReasoners(),
+    };
     populateReasoningUI(toolsSystem);
     const engineSelect = document.getElementById('engine-select');
     const profileSelect = document.getElementById('profile-select');

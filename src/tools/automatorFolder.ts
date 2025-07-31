@@ -5,13 +5,22 @@ import * as path from 'path';
 export const AUTOMATOR_FOLDER = '.automator';
 export const AUTOMATOR_SETTINGS = 'settings.json';
 
+
+/**
+ * Gets the path to the .automator folder in the workspace.
+ * @returns The folder path or undefined if not available
+ */
 export function getAutomatorFolderPath(): string | undefined {
   const folders = vscode.workspace.workspaceFolders;
   if (!folders || folders.length === 0) return undefined;
   return path.join(folders[0].uri.fsPath, AUTOMATOR_FOLDER);
-
 }
 
+
+/**
+ * Checks if the .automator folder exists in the workspace.
+ * @returns Promise of boolean indicating existence
+ */
 export async function automatorFolderExists(): Promise<boolean> {
   const folderPath = getAutomatorFolderPath();
   if (!folderPath) return false;
@@ -23,6 +32,11 @@ export async function automatorFolderExists(): Promise<boolean> {
   }
 }
 
+
+/**
+ * Creates the .automator folder in the workspace if it does not exist.
+ * @returns Promise of boolean indicating success
+ */
 export async function createAutomatorFolder(): Promise<boolean> {
   const folderPath = getAutomatorFolderPath();
   if (!folderPath) return false;
@@ -36,6 +50,10 @@ export async function createAutomatorFolder(): Promise<boolean> {
 
 
 // Settings schema for extensibility
+
+/**
+ * Represents Automator settings for extensibility.
+ */
 export interface AutomatorSettings {
   projectType?: string;
   name?: string;
@@ -43,6 +61,12 @@ export interface AutomatorSettings {
   [key: string]: any;
 }
 
+
+/**
+ * Validates Automator settings object.
+ * @param settings The settings object
+ * @returns True if valid, false otherwise
+ */
 export function validateSettings(settings: any): boolean {
   // Basic validation, extend as needed
   if (!settings || typeof settings !== 'object') return false;
@@ -50,6 +74,12 @@ export function validateSettings(settings: any): boolean {
   return true;
 }
 
+
+/**
+ * Creates the Automator settings file with defaults if it does not exist.
+ * @param defaults Default settings object
+ * @returns Promise of boolean indicating success
+ */
 export async function createAutomatorSettingsFile(defaults: AutomatorSettings = {}): Promise<boolean> {
   const folderPath = getAutomatorFolderPath();
   if (!folderPath) return false;
@@ -65,6 +95,11 @@ export async function createAutomatorSettingsFile(defaults: AutomatorSettings = 
 }
 
 
+
+/**
+ * Gets the Automator settings from the settings file.
+ * @returns Promise of settings object or undefined if not found/invalid
+ */
 export async function getAutomatorSettings(): Promise<AutomatorSettings | undefined> {
   const folderPath = getAutomatorFolderPath();
   if (!folderPath) return undefined;
@@ -79,6 +114,13 @@ export async function getAutomatorSettings(): Promise<AutomatorSettings | undefi
 }
 
 // Extensibility: helper to add a resource file to .automator
+
+/**
+ * Adds a resource file to the .automator folder.
+ * @param filename The resource file name
+ * @param content The file content (string or Buffer)
+ * @returns Promise of boolean indicating success
+ */
 export async function addAutomatorResourceFile(filename: string, content: string | Buffer): Promise<boolean> {
   const folderPath = getAutomatorFolderPath();
   if (!folderPath) return false;

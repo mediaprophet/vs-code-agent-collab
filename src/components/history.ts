@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
 
 // --- Constants ---
 export const LOG_LEVEL_ERROR = 'ERROR';
@@ -71,30 +72,38 @@ export class HistoryProvider implements vscode.TreeDataProvider<HistoryItem> {
         this._onDidChangeTreeData.fire();
     }
 
+    /**
+     * Export history to a JSON file.
+     * @param filePath Path to save the history JSON.
+     */
     exportHistory(filePath: string) {
-        const fs = require('fs');
         try {
             fs.writeFileSync(filePath, JSON.stringify(this.history, null, 2), 'utf8');
             vscode.window.showInformationMessage('History exported successfully.');
-        } catch (err: any) {
-            vscode.window.showErrorMessage('Failed to export history: ' + (err?.message || String(err)));
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            vscode.window.showErrorMessage('Failed to export history: ' + errorMessage);
         }
     }
 
+    /**
+     * Import history from a JSON file.
+     * @param filePath Path to the history JSON file.
+     */
     importHistory(filePath: string) {
-        const fs = require('fs');
         try {
             const data = fs.readFileSync(filePath, 'utf8');
-            const imported = JSON.parse(data);
+            const imported: any = JSON.parse(data);
             if (Array.isArray(imported)) {
-                this.history = imported.map((item: any) => new HistoryItem(item.label, item.description, item.command));
+                this.history = imported.map((item: { label: string; description?: string; command?: vscode.Command }) => new HistoryItem(item.label, item.description, item.command));
                 this._onDidChangeTreeData.fire();
                 vscode.window.showInformationMessage('History imported successfully.');
             } else {
                 vscode.window.showErrorMessage('Invalid history file format.');
             }
-        } catch (err: any) {
-            vscode.window.showErrorMessage('Failed to import history: ' + (err?.message || String(err)));
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            vscode.window.showErrorMessage('Failed to import history: ' + errorMessage);
         }
     }
 
@@ -144,7 +153,14 @@ export function registerHistoryCommands(context: vscode.ExtensionContext, histor
     );
 }
 
-export function logInteraction(logLevel: string, action: string, message: any, logFilePath: string) {
+/**
+ * Log an interaction to a file.
+ * @param logLevel Log level (ERROR, WARNING, INFO)
+ * @param action Action name
+ * @param message Log message
+ * @param logFilePath Path to log file
+ */
+export function logInteraction(logLevel: string, action: string, message: string, logFilePath: string) {
     const entry = {
         timestamp: new Date().toISOString(),
         logLevel,
@@ -152,10 +168,9 @@ export function logInteraction(logLevel: string, action: string, message: any, l
         message
     };
     try {
-        require('fs').appendFileSync(logFilePath, JSON.stringify(entry) + '\n');
-    } catch (err: unknown) {
+        fs.appendFileSync(logFilePath, JSON.stringify(entry) + '\n');
+    } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
-        console.error('Failed to write log:', errorMessage);
         vscode.window.showErrorMessage(`Failed to write to log file: ${errorMessage}`);
     }
 }

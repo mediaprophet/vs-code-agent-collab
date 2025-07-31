@@ -3,7 +3,10 @@ import * as vscode from 'vscode';
 import { logInteraction, LOG_LEVEL_INFO, LOG_LEVEL_ERROR } from './history';
 import * as lmstudioManager from './lmstudioManager';
 
-// Represents a model or an action/memory info item in the LLM models tree
+
+/**
+ * Represents a model or an action/memory info item in the LLM models tree.
+ */
 class LLMModelItem {
     public readonly label: string;
     public readonly isAction?: boolean;
@@ -17,10 +20,14 @@ class LLMModelItem {
     }
 }
 
+/**
+ * TreeDataProvider for LLM models, actions, and memory info.
+ */
 export class LLMModelsProvider implements vscode.TreeDataProvider<LLMModelItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<LLMModelItem | undefined | void> = new vscode.EventEmitter<LLMModelItem | undefined | void>();
     readonly onDidChangeTreeData: vscode.Event<LLMModelItem | undefined | void> = this._onDidChangeTreeData.event;
-    private models: { modelKey: string }[] = [];
+
+    private models: Array<{ modelKey: string }> = [];
     private loadedModels: string[] = [];
     private selectedModel: string | undefined;
     private memoryInfo: string | undefined;
@@ -50,18 +57,21 @@ export class LLMModelsProvider implements vscode.TreeDataProvider<LLMModelItem> 
         }
     }
 
+    /**
+     * Refreshes the list of local and loaded models, and memory info.
+     */
     async refresh() {
         try {
             this.loading = true;
             this._onDidChangeTreeData.fire();
             const localModels = await lmstudioManager.listLocalModels();
             this.models = localModels;
-            const loaded = await lmstudioManager.listLoadedModels();
-            this.loadedModels = loaded.map((m: any) => m.modelKey);
-            const memInfo = await lmstudioManager.getMemoryInfo();
+            const loaded: Array<{ modelKey: string }> = await lmstudioManager.listLoadedModels();
+            this.loadedModels = loaded.map(m => m.modelKey);
+            const memInfo: { system: string; gpu?: string } = await lmstudioManager.getMemoryInfo();
             this.memoryInfo = memInfo.gpu ? `System: ${memInfo.system}, GPU: ${memInfo.gpu}` : `System: ${memInfo.system}`;
             logInteraction(LOG_LEVEL_INFO, 'LLM_MODELS_REFRESHED', `Fetched ${this.models.length} models`, this.context.extensionPath + '/copilot_interactions.log');
-        } catch (err: unknown) {
+        } catch (err) {
             const errorMessage = err instanceof Error ? err.message : String(err);
             this.models = [];
             this.loadedModels = [];
